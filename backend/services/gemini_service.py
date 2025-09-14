@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from ..models.analysis_models import ChatResponse
 
 load_dotenv()
-GOOGLE_API_KEY="AIzaSyDKiz8E-uhXJsbjQVxcKh-kIcDBUB2K3bE"
 
 class GeminiService:
     def __init__(self):
