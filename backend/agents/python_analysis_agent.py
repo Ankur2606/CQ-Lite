@@ -115,7 +115,7 @@ def python_analysis_agent(state: CodeAnalysisState) -> CodeAnalysisState:
 
     print(f"🐍 Analyzing {len(python_files)} Python files...")
     
-    for file_path in python_files[:5]:  # Limit for demo
+    for file_path in python_files[:10]:  # Limit for demo
         print(f"📁 Analyzing: {file_path}")
         # Traditional AST + Tool Analysis
         import asyncio

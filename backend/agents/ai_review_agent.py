@@ -6,13 +6,18 @@ from backend.services.llm_service import get_llm_model
 from backend.models.analysis_models import CodeIssue, IssueSeverity, IssueCategory
 from .state_schema import CodeAnalysisState
 
-def read_codebase_context(discovered_files: Dict[str, List[str]], file_metadata: Dict[str, Dict] = None) -> Dict[str, str]:
+def read_codebase_context(discovered_files: Dict[str, List[str]], file_metadata: Dict[str, Dict] = None, force_full_content: bool = False) -> Dict[str, str]:
     """Read the entire codebase for AI context with intelligent truncation"""
     codebase_context = {}
     
     for language, files in discovered_files.items():
         for file_path in files:
             try:
+                if force_full_content:
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        codebase_context[file_path] = f.read()
+                    continue
+
                 # Check if file should be truncated based on metadata
                 metadata = file_metadata.get(file_path, {}) if file_metadata else {}
                 is_truncated = metadata.get('truncated', False)
@@ -444,19 +449,28 @@ def ai_review_agent(state: CodeAnalysisState) -> CodeAnalysisState:
         discovered_files = state.get("discovered_files", {})
         file_metadata = state.get("file_metadata", {})
         
+        total_files = sum(len(files) for files in discovered_files.values())
+        force_full_content = total_files <= 5
+
+        if force_full_content:
+            print("🔍 Fewer than 6 files detected. Reading full file contents for AI review.")
+
         # Count truncated vs full files
         truncated_count = 0
         full_count = 0
-        for file_path in sum(discovered_files.values(), []):
-            metadata = file_metadata.get(file_path, {})
-            if metadata.get('truncated', False):
-                truncated_count += 1
-            else:
-                full_count += 1
-        
+        if not force_full_content:
+            for file_path in sum(discovered_files.values(), []):
+                metadata = file_metadata.get(file_path, {})
+                if metadata.get('truncated', False):
+                    truncated_count += 1
+                else:
+                    full_count += 1
+        else:
+            full_count = total_files
+
         print(f"📊 File processing: {truncated_count} truncated (description only), {full_count} full content")
         
-        codebase_context = read_codebase_context(discovered_files, file_metadata)
+        codebase_context = read_codebase_context(discovered_files, file_metadata, force_full_content=force_full_content)
         
         # Create comprehensive analysis prompt
         analysis_prompt = create_comprehensive_analysis_prompt(state, codebase_context, file_metadata)
