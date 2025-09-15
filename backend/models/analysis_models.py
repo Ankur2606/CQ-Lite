@@ -29,6 +29,7 @@ class CodeIssue(BaseModel):
     code_snippet: Optional[str] = None
     suggestion: str
     impact_score: float  # 0-10 scale
+    ai_review_context: Optional[str] = None
 
 class FileMetrics(BaseModel):
     file_path: str

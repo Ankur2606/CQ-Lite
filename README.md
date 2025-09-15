@@ -107,7 +107,7 @@ npm run dev
 
 ### CLI Commands
 
-**Analyze Code**:
+**Traditional Analysis**:
 ```bash
 # Analyze a directory
 uv run python -m cli analyze ./src
@@ -118,20 +118,29 @@ uv run python -m cli analyze ./src --severity high
 # Get detailed resolution steps for each issue
 uv run python -m cli analyze ./src --insights
 
-# Combine filters with insights
-uv run python -m cli analyze ./src --severity high --insights
-
 # JSON output
 uv run python -m cli analyze ./src --format json
 ```
 
+**🤖 NEW: Agentic Analysis (LangGraph-powered)**:
+```bash
+# AI-orchestrated analysis with intelligent agents
+uv run python -m cli.agentic_cli analyze ./src
+
+# Agentic analysis with AI insights
+uv run python -m cli.agentic_cli analyze ./src --insights
+
+# AI agents determine optimal analysis strategy
+uv run python -m cli.agentic_cli analyze ./src --severity high
+```
+
 **Interactive Chat**:
 ```bash
-# Start chat session
-uv run python -m cli chat
-
-# Chat with code context
+# Traditional chat
 uv run python -m cli chat --context ./src
+
+# Agentic chat (coming soon)
+uv run python -m cli.agentic_cli chat --context ./src
 ```
 
 ### Web Interface
@@ -152,11 +161,19 @@ uv run python -m cli chat --context ./src
 - Code complexity (cyclomatic complexity)
 - Code duplication detection
 - Style and quality issues
+- Hardcoded secrets detection
 
 ✅ **AI Integration**
 - Gemini-powered conversational interface
 - Context-aware code explanations
 - Actionable improvement suggestions
+- **🆕 LangGraph Agentic Workflows**
+
+✅ **🤖 Agentic System (NEW)**
+- **AI-Orchestrated Analysis**: LangGraph agents coordinate analysis
+- **Intelligent Strategy Planning**: AI determines optimal analysis approach
+- **Multi-Agent Coordination**: Specialized agents for different languages
+- **Dynamic Workflow Routing**: Conditional logic based on codebase structure
 
 ✅ **Modern Web UI**
 - Dark gradient theme with accessibility
@@ -169,6 +186,7 @@ uv run python -m cli chat --context ./src
 - Multiple output formats
 - Severity filtering
 - Interactive chat mode
+- **🆕 Agentic CLI**: AI-powered analysis orchestration
 
 ## Architecture
 

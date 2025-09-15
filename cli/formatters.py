@@ -52,43 +52,53 @@ def format_analysis_result(result: AnalysisResult, show_insights: bool = False) 
         
         console.print(severity_table)
         
-        # Top issues
-        console.print("\n🔍 Top Issues:")
-        for i, issue in enumerate(result.issues[:10], 1):
-            severity_color = severity_colors.get(issue.severity, 'white')
+        
+        # Group issues by category
+        categorized_issues = {}
+        for issue in result.issues:
+            category = issue.category.value.replace('_', ' ').title()
+            if category not in categorized_issues:
+                categorized_issues[category] = []
+            categorized_issues[category].append(issue)
             
-            # Check if we have AI insights and should show them
-            if show_insights and "🔧 Fix:" in issue.suggestion:
-                # AI-generated insights - replace original suggestion
+        # Display issues by category
+        for category, issues in categorized_issues.items():
+            console.print(f"\n--- {category} ({len(issues)}) ---")
+            max_display = min(20, len(issues))
+            for i, issue in enumerate(issues[:max_display], 1):
+                severity_color = severity_colors.get(issue.severity, 'white')
+                
                 issue_text = f"""
 [{severity_color}]{issue.severity.upper()}[/{severity_color}] - {issue.title}
 📁 {issue.file_path}:{issue.line_number or 'N/A'}
 📝 {issue.description}
+"""
 
-🤖 AI Insights:
+                if show_insights:
+                    if issue.ai_review_context:
+                        issue_text += f"""
+🤖 AI Review Context: {issue.ai_review_context}
+"""
+                    if issue.suggestion:
+                        issue_text += f"""
+🔧 Quick Fix:
 {issue.suggestion}
 """
-            elif show_insights:
-                # Fallback to concise rule-based resolution
-                resolution_steps = get_concise_resolution(issue)
-                issue_text = f"""
-[{severity_color}]{issue.severity.upper()}[/{severity_color}] - {issue.title}
-📁 {issue.file_path}:{issue.line_number or 'N/A'}
-📝 {issue.description}
-
-🔧 Quick Fix:
-{resolution_steps}
+                    issue_text += f"""
+⚠️  Impact: {issue.impact_score}/10
 """
-            else:
-                # Standard display without insights
-                issue_text = f"""
-[{severity_color}]{issue.severity.upper()}[/{severity_color}] - {issue.title}
-📁 {issue.file_path}:{issue.line_number or 'N/A'}
-📝 {issue.description}
+                else:
+                    if issue.suggestion:
+                        issue_text += f"""
 💡 {issue.suggestion}
 """
-            
-            console.print(Panel(issue_text, border_style=severity_color))
+                
+                console.print(Panel(issue_text, border_style=severity_color))
+        
+        # Show note if there are more issues
+        if len(result.issues) > 20:
+            remaining = len(result.issues) - 20
+            console.print(f"\n📝 ... and {remaining} more issues (use --format json to see all)")
     
     return ""  # Rich console handles the output
 

@@ -70,6 +70,12 @@ class PythonAnalyzer:
         
         return issues, metrics   
  
+    def _generate_issue_id(self, file_path: str, line_number: int, title: str) -> str:
+        """Generate a consistent, predictable ID for an issue."""
+        # Normalize title to create a stable ID
+        normalized_title = ''.join(e for e in title if e.isalnum()).lower()
+        return f"{os.path.basename(file_path)}-{line_number}-{normalized_title}"
+
     def _analyze_complexity(self, tree: ast.AST, content: str, file_path: str) -> List[CodeIssue]:
         """Analyze code complexity"""
         issues = []
@@ -80,12 +86,13 @@ class PythonAnalyzer:
             for result in complexity_results:
                 if result.complexity > 10:  # High complexity threshold
                     severity = IssueSeverity.HIGH if result.complexity > 15 else IssueSeverity.MEDIUM
+                    title = f"High Complexity in {result.name}"
                     
                     issues.append(CodeIssue(
-                        id=f"complexity_{file_path}_{result.lineno}",
+                        id=self._generate_issue_id(file_path, result.lineno, title),
                         category=IssueCategory.COMPLEXITY,
                         severity=severity,
-                        title=f"High Complexity in {result.name}",
+                        title=title,
                         description=f"Function/method has cyclomatic complexity of {result.complexity}",
                         file_path=file_path,
                         line_number=result.lineno,
@@ -122,7 +129,7 @@ class PythonAnalyzer:
                     }
                     
                     issues.append(CodeIssue(
-                        id=f"security_{file_path}_{finding['line_number']}",
+                        id=self._generate_issue_id(file_path, finding['line_number'], finding['test_name']),
                         category=IssueCategory.SECURITY,
                         severity=severity_map.get(finding['issue_severity'], IssueSeverity.MEDIUM),
                         title=finding['test_name'],
@@ -159,11 +166,12 @@ class PythonAnalyzer:
         for i, func1 in enumerate(functions):
             for func2 in functions[i+1:]:
                 if func1['body_hash'] == func2['body_hash'] and func1['name'] != func2['name']:
+                    title = "Duplicate code detected"
                     issues.append(CodeIssue(
-                        id=f"duplication_{file_path}_{func1['lineno']}",
+                        id=self._generate_issue_id(file_path, func1['lineno'], title),
                         category=IssueCategory.DUPLICATION,
                         severity=IssueSeverity.MEDIUM,
-                        title=f"Duplicate code detected",
+                        title=title,
                         description=f"Functions '{func1['name']}' and '{func2['name']}' have similar implementations",
                         file_path=file_path,
                         line_number=func1['lineno'],
@@ -184,11 +192,12 @@ class PythonAnalyzer:
                 # Look for nested loops
                 for child in ast.walk(node):
                     if isinstance(child, ast.For) and child != node:
+                        title = "Nested loops detected"
                         issues.append(CodeIssue(
-                            id=f"performance_{file_path}_{node.lineno}",
+                            id=self._generate_issue_id(file_path, node.lineno, title),
                             category=IssueCategory.PERFORMANCE,
                             severity=IssueSeverity.MEDIUM,
-                            title="Nested loops detected",
+                            title=title,
                             description="Nested loops can impact performance",
                             file_path=file_path,
                             line_number=node.lineno,

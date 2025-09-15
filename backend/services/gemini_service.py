@@ -6,16 +6,49 @@ from dotenv import load_dotenv
 from ..models.analysis_models import ChatResponse
 
 load_dotenv()
-GOOGLE_API_KEY="AIzaSyDKiz8E-uhXJsbjQVxcKh-kIcDBUB2K3bE"
 
-class GeminiService:
+# Singleton instance of the Gemini model
+_gemini_model_instance: Optional['GeminiModel'] = None
+
+class GeminiModel:
+    """
+    A wrapper for the Gemini AI model to provide a consistent interface
+    with the Nebius model wrapper.
+    """
     def __init__(self):
         api_key = os.getenv('GOOGLE_API_KEY')
         if not api_key:
+            # This will be handled by the get_gemini_model function
             raise ValueError("GOOGLE_API_KEY environment variable is required")
         
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
+
+    def generate_content(self, prompt: str):
+        """
+        Generates content using the Gemini model. The response object
+        already has a .text attribute, so it's compatible.
+        """
+        return self.model.generate_content(prompt)
+
+def get_gemini_model() -> Optional[GeminiModel]:
+    """Get a singleton instance of the GeminiModel wrapper"""
+    global _gemini_model_instance
+    if _gemini_model_instance is None:
+        if os.getenv('GOOGLE_API_KEY'):
+            try:
+                _gemini_model_instance = GeminiModel()
+            except ValueError as e:
+                print(f"⚠️ Could not initialize Gemini: {e}")
+                return None
+        else:
+            print("⚠️ GOOGLE_API_KEY not set. Gemini model will not be available.")
+            return None
+    return _gemini_model_instance
+
+class GeminiService:
+    def __init__(self):
+        self.model = get_gemini_model()
         self.chat_history = []
     
     async def chat(self, message: str, context: Optional[Dict[str, Any]] = None) -> ChatResponse:
