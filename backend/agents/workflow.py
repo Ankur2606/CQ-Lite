@@ -4,6 +4,7 @@ from .file_discovery_agent import file_discovery_agent
 from .python_analysis_agent import python_analysis_agent
 from .ai_review_agent import ai_review_agent
 from .qna_agent import qna_agent_for_code
+from .notion_report_agent import notion_report_agent
 import re
 
 def detect_analysis_request(query: str) -> dict:
@@ -97,6 +98,13 @@ def route_after_qna(state: CodeAnalysisState) -> str:
     else:
         return END
 
+def route_after_ai_review(state: CodeAnalysisState) -> str:
+    """Route after AI review - either push to Notion or end"""
+    if state.get("notion_reporting_enabled", False):
+        return "notion_report"
+    else:
+        return END
+
 def route_language_analysis(state: CodeAnalysisState) -> str:
     """AI-driven routing based on analysis strategy"""
     strategy = state.get("analysis_strategy", {})
@@ -148,6 +156,7 @@ def create_agentic_analysis_workflow() -> StateGraph:
     workflow.add_node("python_analysis", python_analysis_agent)
     workflow.add_node("ai_review", ai_review_agent)  # Comprehensive AI review
     workflow.add_node("qna_agent", qna_agent_wrapper)  # Q&A agent for chat mode
+    workflow.add_node("notion_report", notion_report_agent)  # Notion reporting agent
     # workflow.add_node("javascript_analysis", javascript_analysis_agent)  # TODO: Implement
     # workflow.add_node("report_synthesis", report_synthesis_agent)  # TODO: Implement
     
@@ -192,7 +201,17 @@ def create_agentic_analysis_workflow() -> StateGraph:
         }
     )
     
-    # AI review completion
-    workflow.add_edge("ai_review", END)
+    # AI review to Notion routing
+    workflow.add_conditional_edges(
+        "ai_review",
+        route_after_ai_review,
+        {
+            "notion_report": "notion_report",
+            END: END
+        }
+    )
+    
+    # Notion report completion
+    workflow.add_edge("notion_report", END)
     
     return workflow.compile()

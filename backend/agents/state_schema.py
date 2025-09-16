@@ -41,6 +41,9 @@ class CodeAnalysisState(TypedDict):
     detected_analysis_path: Optional[str]
     detected_model_choice: Optional[str]
     
+    # Notion Integration
+    notion_reporting_enabled: bool
+    
     # Workflow Control
     current_step: str
     errors: List[str]

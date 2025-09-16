@@ -26,7 +26,8 @@ def cli():
 @click.option('--insights', '-i', is_flag=True, help='Generate AI insights')
 @click.option('--model', type=click.Choice(['gemini', 'nebius']), default='gemini', help='Choose the AI model for analysis')
 @click.option('--quick', is_flag=True, help='Run a quick analysis, skipping vector store and using Nebius model.')
-def analyze(path, format, severity, insights, model, quick):
+@click.option('--notion', is_flag=True, help='Push analysis results to Notion (requires NOTION_TOKEN and NOTION_PAGE_ID env vars)')
+def analyze(path, format, severity, insights, model, quick, notion):
     """Agentic code analysis using LangGraph orchestration"""
     
     if quick:
@@ -34,6 +35,13 @@ def analyze(path, format, severity, insights, model, quick):
         click.echo(f"🚀 Running quick analysis of: {path} using {model} model, skipping vector store.")
     else:
         click.echo(f"🤖 Starting agentic analysis of: {path} using {model} model")
+    
+    if notion:
+        click.echo("📝 Notion reporting enabled - results will be pushed to Notion")
+        # Check if environment variables are set
+        import os
+        if not os.getenv("NOTION_TOKEN") or not os.getenv("NOTION_PAGE_ID"):
+            click.echo("⚠️  Warning: NOTION_TOKEN and/or NOTION_PAGE_ID not set. Notion reporting will be skipped.")
     
     async def run_agentic_analysis():
         # Initialize agent state from CLI parameters
@@ -60,6 +68,7 @@ def analyze(path, format, severity, insights, model, quick):
             analysis_requested=False,
             detected_analysis_path=None,
             detected_model_choice=None,
+            notion_reporting_enabled=notion,
             current_step="start",
             errors=[],
             analysis_complete=False,
@@ -148,7 +157,8 @@ def analyze(path, format, severity, insights, model, quick):
 
 @cli.command()
 @click.option('--context', '-c', type=click.Path(exists=True), help='Path to analyzed code for context')
-def chat(context):
+@click.option('--notion', is_flag=True, help='Push analysis results to Notion when analysis is triggered (requires NOTION_TOKEN and NOTION_PAGE_ID env vars)')
+def chat(context, notion):
     """Interactive Q&A using agentic workflow with analysis triggering"""
     click.echo("💬 Agentic chat mode activated!")
     click.echo("You can ask questions about your code or request analysis (e.g., 'analyze ./cli' or 'review the codebase at ./src')")
@@ -196,6 +206,7 @@ def chat(context):
                 analysis_requested=False,
                 detected_analysis_path=None,
                 detected_model_choice=None,
+                notion_reporting_enabled=notion,
                 current_step="chat_start",
                 errors=[],
                 analysis_complete=False,
