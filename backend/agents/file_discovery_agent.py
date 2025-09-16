@@ -79,14 +79,19 @@ def parse_strategy_response(response_content: str) -> Dict[str, any]:
 def file_discovery_agent(state: CodeAnalysisState) -> CodeAnalysisState:
     """AI-powered file discovery and analysis strategy determination"""
     
+    # If analysis was triggered from chat, use detected parameters
+    target_path = state.get("detected_analysis_path") or state["target_path"]
+    model_choice = state.get("detected_model_choice") or state.get("model_choice", "gemini")
+    
+    print(f"🔍 Discovering files in: {target_path} (model: {model_choice})")
+    
     # Discover files using existing logic
     discovered_files = discover_files_by_language(
-        state["target_path"], 
+        target_path, 
         state["include_patterns"]
     )
     
     # Get the selected model from the state
-    model_choice = state.get("model_choice", "gemini")
     llm_model = get_llm_model(model_choice)
 
     # AI Strategy Planning

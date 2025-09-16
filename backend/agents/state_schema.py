@@ -35,6 +35,12 @@ class CodeAnalysisState(TypedDict):
     current_query: str
     analysis_context: Dict[str, any]   # Full analysis results for Q&A
     
+    # Chat Mode Control
+    chat_mode: bool
+    analysis_requested: bool
+    detected_analysis_path: Optional[str]
+    detected_model_choice: Optional[str]
+    
     # Workflow Control
     current_step: str
     errors: List[str]

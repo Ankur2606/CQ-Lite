@@ -57,6 +57,9 @@ def analyze(path, format, severity, insights, model, quick):
             conversation_history=[],
             current_query="",
             analysis_context={},
+            analysis_requested=False,
+            detected_analysis_path=None,
+            detected_model_choice=None,
             current_step="start",
             errors=[],
             analysis_complete=False,
@@ -146,12 +149,98 @@ def analyze(path, format, severity, insights, model, quick):
 @cli.command()
 @click.option('--context', '-c', type=click.Path(exists=True), help='Path to analyzed code for context')
 def chat(context):
-    """Interactive Q&A using agentic workflow (TODO: Implement)"""
-    click.echo("💬 Agentic chat mode coming soon!")
-    click.echo("This will use LangGraph agents for intelligent conversation.")
+    """Interactive Q&A using agentic workflow with analysis triggering"""
+    click.echo("💬 Agentic chat mode activated!")
+    click.echo("You can ask questions about your code or request analysis (e.g., 'analyze ./cli' or 'review the codebase at ./src')")
     
     if context:
-        click.echo(f"📁 Context would be loaded from: {context}")
+        click.echo(f"📁 Context loaded from: {context}")
+    
+    # Initialize chat state
+    from langchain_core.messages import HumanMessage, AIMessage
+    
+    conversation_history = []
+    
+    while True:
+        try:
+            user_input = click.prompt("You")
+            
+            if user_input.lower() in ['exit', 'quit', 'bye']:
+                click.echo("👋 Goodbye!")
+                break
+            
+            # Add user message to history
+            conversation_history.append(HumanMessage(content=user_input))
+            
+            # Initialize agent state for this query
+            initial_state = CodeAnalysisState(
+                target_path=context or ".",  # Use context path or current directory
+                include_patterns=["*.py", "*.js", "*.ts", "*.jsx", "*.tsx"],
+                severity_filter=None,
+                insights_requested=True,
+                model_choice="gemini",
+                skip_vector_store=False,
+                chat_mode=True,
+                discovered_files={},
+                file_analysis_complete={},
+                all_issues=[],
+                python_issues=[],
+                javascript_issues=[],
+                file_metrics=[],
+                analysis_strategy={},
+                current_batch=[],
+                ai_insights_complete=False,
+                conversation_history=conversation_history,
+                current_query=user_input,
+                analysis_context={},
+                analysis_requested=False,
+                detected_analysis_path=None,
+                detected_model_choice=None,
+                current_step="chat_start",
+                errors=[],
+                analysis_complete=False,
+                final_report=None
+            )
+            
+            async def run_chat_query():
+                try:
+                    result = await agentic_workflow.ainvoke(initial_state)
+                    
+                    # Get the latest response from conversation history
+                    if result.get("conversation_history"):
+                        last_message = result["conversation_history"][-1]
+                        if hasattr(last_message, 'content'):
+                            response = last_message.content
+                        else:
+                            response = str(last_message)
+                        
+                        click.echo(f"\n🤖 Assistant: {response}")
+                        
+                        # Add assistant response to history
+                        conversation_history.append(AIMessage(content=response))
+                    
+                    # If analysis was triggered, show analysis results
+                    if result.get("analysis_requested"):
+                        click.echo(f"\n📊 Analysis triggered for: {result.get('detected_analysis_path')}")
+                        click.echo(f"📈 Analysis complete! Found {len(result.get('all_issues', []))} issues")
+                        
+                        # Show summary if available
+                        if result.get("final_report"):
+                            report = result["final_report"]
+                            click.echo(f"📋 Total files: {report.total_files}")
+                            click.echo(f"🔍 Total issues: {len(report.issues)}")
+                    
+                except Exception as e:
+                    click.echo(f"❌ Error: {str(e)}")
+            
+            asyncio.run(run_chat_query())
+            
+        except KeyboardInterrupt:
+            click.echo("\n👋 Goodbye!")
+            break
+        except click.Abort:
+            click.echo("\n👋 Goodbye!")
+            break
 
 if __name__ == '__main__':
     cli()
