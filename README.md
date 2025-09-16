@@ -1,5 +1,7 @@
 # Code Quality Intelligence Agent
 
+<img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/80cbfc6f-eef5-4578-b7ee-5bc5463558ec" />
+
 An AI-powered code analysis tool that provides deep insights into code quality, security, and maintainability using AST-based analytics and Gemini AI.
 
 ## Features
@@ -133,6 +135,10 @@ uv run python -m cli.agentic_cli analyze ./src --insights
 # AI agents determine optimal analysis strategy
 uv run python -m cli.agentic_cli analyze ./src --severity high
 ```
+**Agent Architecture Diagram**:
+--
+<img width="1393" height="3840" alt="Untitled diagram _ Mermaid Chart-2025-09-16-231002" src="https://github.com/user-attachments/assets/f6dc4ac7-3057-4910-9022-e3169fa9e171" />
+
 
 **Interactive Chat**:
 ```bash
