@@ -1,11 +1,74 @@
 import json
 import re
 import os
-from typing import List, Dict
+from typing import List, Dict, TypedDict
 from backend.services.llm_service import get_llm_model
 from backend.models.analysis_models import CodeIssue
 from .state_schema import CodeAnalysisState
 from backend.analyzers.python_analyzer import PythonAnalyzer
+from backend.tools.vector_store_tool import add_to_vector_store, query_vector_store
+
+class VectorStorePayload(TypedDict):
+    file_path: str
+    description: str
+    code: str
+    metadata: Dict[str, any]
+
+def chunk_code_for_embedding(code: str, max_chars: int = 3000, overlap: int = 300) -> List[str]:
+    """
+    Splits code into chunks for embedding, trying to preserve logical blocks.
+    """
+    # Attempt to split by larger structures first
+    chunks = re.split(r'(\nclass |\ndef )', code)
+    
+    processed_chunks = []
+    temp_chunk = ""
+    for i in range(0, len(chunks), 2):
+        chunk_pair = chunks[i] + (chunks[i+1] if i+1 < len(chunks) else "")
+        if len(temp_chunk) + len(chunk_pair) > max_chars:
+            if temp_chunk:
+                processed_chunks.append(temp_chunk)
+            temp_chunk = chunk_pair
+        else:
+            temp_chunk += chunk_pair
+    if temp_chunk:
+        processed_chunks.append(temp_chunk)
+
+    # If chunks are still too large, fall back to slicing
+    final_chunks = []
+    for chunk in processed_chunks:
+        if len(chunk) > max_chars:
+            start = 0
+            while start < len(chunk):
+                end = start + max_chars
+                final_chunks.append(chunk[start:end])
+                start += max_chars - overlap
+        else:
+            final_chunks.append(chunk)
+            
+    return final_chunks
+
+def build_vector_metadata(file_path: str, file_content: str, metrics: Dict[str, any], ai_metadata: Dict[str, any]) -> Dict[str, any]:
+    """Builds a metadata dictionary for vector store indexing."""
+    
+    file_name = os.path.basename(file_path)
+    directory = os.path.dirname(file_path)
+    module = file_name.replace('.py', '')
+    
+    return {
+        "file_path": file_path,
+        "file_name": file_name,
+        "directory": directory,
+        "module": module,
+        "file_type": "python",
+        "num_lines": len(file_content.splitlines()),
+        "functions": metrics.functions if metrics else [],
+        "classes": metrics.classes if metrics else [],
+        "business_impact": ai_metadata.get("business_impact", "Not assessed"),
+        "architectural_concerns": ai_metadata.get("architectural_concerns", []),
+        "commit_hash": "",  # Placeholder
+        "last_modified": "" # Placeholder
+    }
 
 def read_file_content(file_path: str, max_chars: int = 2000) -> str:
     """Read file content with size limit"""
@@ -182,6 +245,31 @@ Your response:"""
                 print(f"   📊 File {file_path} - Truncated: {metadata.get('truncated', False)}")
                 python_issues.extend(enhanced_issues)
                 file_metadata[file_path] = metadata
+
+                # Vector Store Integration
+                if not state.get("skip_vector_store", False):
+                    try:
+                        print(f"   💾 Indexing {file_path} in vector store...")
+                        vector_meta = build_vector_metadata(file_path, file_content, metrics or {}, metadata)
+                        code_chunks = chunk_code_for_embedding(file_content)
+                        
+                        for i, chunk in enumerate(code_chunks):
+                            payload: VectorStorePayload = {
+                                "file_path": file_path,
+                                "description": metadata.get("description", ""),
+                                "code": chunk,
+                                "metadata": {**vector_meta, "chunk_index": i}
+                            }
+                            add_to_vector_store.invoke(payload)
+                        
+                        file_metadata[file_path]["vectorized"] = True
+                        print(f"   ✅ Successfully indexed {len(code_chunks)} chunks for {file_path}")
+
+                    except Exception as e:
+                        print(f"   ❌ Vector store indexing failed for {file_path}: {e}")
+                        file_metadata[file_path]["vectorized"] = False
+                else:
+                    print("   ⏩ Skipping vector store indexing due to --quick flag.")
             else:
                 # Fallback to original issues if AI not available
                 print(f"   ⚠️ No AI model available for enhancement. Using static analysis results.")
@@ -216,5 +304,6 @@ Your response:"""
             **state.get("file_analysis_complete", {}), 
             "python": True
         },
+        "vector_store_complete": True,
         "current_step": "python_analysis_complete"
     }

@@ -38,6 +38,8 @@ class FileMetrics(BaseModel):
     complexity_score: float
     duplication_percentage: float
     test_coverage: Optional[float] = None
+    functions: Optional[List[str]] = []
+    classes: Optional[List[str]] = []
 
 class AnalysisResult(BaseModel):
     summary: Dict[str, Any]

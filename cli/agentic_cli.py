@@ -25,9 +25,15 @@ def cli():
 @click.option('--severity', '-s', type=click.Choice(['low', 'medium', 'high', 'critical']), help='Filter by severity')
 @click.option('--insights', '-i', is_flag=True, help='Generate AI insights')
 @click.option('--model', type=click.Choice(['gemini', 'nebius']), default='gemini', help='Choose the AI model for analysis')
-def analyze(path, format, severity, insights, model):
+@click.option('--quick', is_flag=True, help='Run a quick analysis, skipping vector store and using Nebius model.')
+def analyze(path, format, severity, insights, model, quick):
     """Agentic code analysis using LangGraph orchestration"""
-    click.echo(f"🤖 Starting agentic analysis of: {path} using {model} model")
+    
+    if quick:
+        model = 'nebius'
+        click.echo(f"🚀 Running quick analysis of: {path} using {model} model, skipping vector store.")
+    else:
+        click.echo(f"🤖 Starting agentic analysis of: {path} using {model} model")
     
     async def run_agentic_analysis():
         # Initialize agent state from CLI parameters
@@ -37,6 +43,7 @@ def analyze(path, format, severity, insights, model):
             severity_filter=severity,
             insights_requested=insights,
             model_choice=model,  # Pass model choice to the state
+            skip_vector_store=quick,
             chat_mode=False,
             discovered_files={},
             file_analysis_complete={},

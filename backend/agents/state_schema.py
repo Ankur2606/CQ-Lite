@@ -10,6 +10,7 @@ class CodeAnalysisState(TypedDict):
     severity_filter: Optional[str]
     insights_requested: bool
     model_choice: Literal['gemini', 'nebius']
+    skip_vector_store: bool
     chat_mode: bool
     
     # File Discovery & Routing
