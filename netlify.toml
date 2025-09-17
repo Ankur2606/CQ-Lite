@@ -10,7 +10,7 @@
 
 [build.environment]
   # Frontend environment variables
-  NEXT_PUBLIC_API_URL = "https://your-backend-url.herokuapp.com"
+  NEXT_PUBLIC_API_URL = "https://cq-lite-backend.onrender.com"
 
 # Next.js specific settings
 [[plugins]]
