@@ -5,7 +5,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Code Quality Intelligence Agent',
+  title: 'CQ Lite',
   description: 'AI-powered code analysis and quality insights',
 }
 
