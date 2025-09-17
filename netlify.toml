@@ -1,9 +1,12 @@
 [build]
-  # Build command for Next.js frontend
-  command = "cd frontend && npm install && npm run build"
+  # Build command for Next.js frontend (no cd needed since base is frontend)
+  command = "npm install && npm run build"
   
   # Output directory for Next.js static export
-  publish = "frontend/out"
+  publish = "out"
+  
+  # Base directory is the frontend folder
+  base = "frontend"
 
 [build.environment]
   # Node.js version
