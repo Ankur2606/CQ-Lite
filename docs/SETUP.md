@@ -18,8 +18,23 @@
 2. **Configure environment**:
    ```bash
    cp .env.example .env
-   # Edit .env and add your GOOGLE_API_KEY
+   # Edit .env and add your API keys
    ```
+
+   **Required Environment Variables**:
+   - `GOOGLE_API_KEY`: Required for Gemini AI analysis ([Get API key](https://ai.google.dev/tutorials/setup))
+   - `GITHUB_API_TOKEN`: Required for GitHub repository analysis ([Generate token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens))
+   
+   **Optional Environment Variables**:
+   - `NEBIUS_API_KEY`: Alternative AI model for analysis
+   - `NOTION_TOKEN` and `NOTION_PAGE_ID`: Required for Notion integration
+   
+   You can check your environment setup with:
+   ```bash
+   uv run python -m cli env
+   ```
+   
+   For detailed information on CLI commands and options, see [CLI Documentation](CLI.md).
 
 3. **Start the backend**:
    ```bash

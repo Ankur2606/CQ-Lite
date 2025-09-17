@@ -112,8 +112,9 @@ def route_language_analysis(state: CodeAnalysisState) -> str:
     
     has_python = len(discovered.get("python", [])) > 0
     has_js = len(discovered.get("javascript", [])) > 0
+    has_docker = len(discovered.get("docker", [])) > 0
     
-    if not has_python and not has_js:
+    if not has_python and not has_js and not has_docker:
         return "no_files"
     
     # Use AI strategy to determine routing
@@ -123,6 +124,8 @@ def route_language_analysis(state: CodeAnalysisState) -> str:
         return "python_analysis"
     elif has_js:
         return "javascript_analysis"
+    elif has_docker:
+        return "docker_analysis"
     else:
         return "no_files"
 
@@ -133,15 +136,19 @@ def check_analysis_completion(state: CodeAnalysisState) -> str:
     
     python_needed = len(discovered.get("python", [])) > 0
     js_needed = len(discovered.get("javascript", [])) > 0
+    docker_needed = len(discovered.get("docker", [])) > 0
     
     python_done = completion_status.get("python", not python_needed)
     js_done = completion_status.get("javascript", not js_needed)
+    docker_done = completion_status.get("docker", not docker_needed)
     
-    if python_done and js_done:
+    if python_done and js_done and docker_done:
         # Always go to AI review for comprehensive analysis
         return "ai_review"
     elif not js_done and js_needed:
         return "javascript_analysis"
+    elif not docker_done and docker_needed:
+        return "docker_analysis"
     else:
         return "ai_review"
 
@@ -157,7 +164,15 @@ def create_agentic_analysis_workflow() -> StateGraph:
     workflow.add_node("ai_review", ai_review_agent)  # Comprehensive AI review
     workflow.add_node("qna_agent", qna_agent_wrapper)  # Q&A agent for chat mode
     workflow.add_node("notion_report", notion_report_agent)  # Notion reporting agent
-    # workflow.add_node("javascript_analysis", javascript_analysis_agent)  # TODO: Implement
+    
+    # Import and add JavaScript analysis agent
+    from .javascript_analysis_agent import javascript_analysis_agent
+    workflow.add_node("javascript_analysis", javascript_analysis_agent)
+    
+    # Import and add Docker analysis agent
+    from .docker_analysis_agent import docker_analysis_agent
+    workflow.add_node("docker_analysis", docker_analysis_agent)
+    
     # workflow.add_node("report_synthesis", report_synthesis_agent)  # TODO: Implement
     
     # Define workflow edges with intelligent routing
@@ -186,7 +201,8 @@ def create_agentic_analysis_workflow() -> StateGraph:
         route_language_analysis,
         {
             "python_analysis": "python_analysis",
-            "javascript_analysis": END,  # TODO: Replace with actual JS agent
+            "javascript_analysis": "javascript_analysis",
+            "docker_analysis": "docker_analysis",
             "no_files": END
         }
     )
@@ -196,10 +212,24 @@ def create_agentic_analysis_workflow() -> StateGraph:
         "python_analysis",
         check_analysis_completion,
         {
-            "javascript_analysis": END,  # TODO: Replace with actual JS agent
+            "javascript_analysis": "javascript_analysis",
+            "docker_analysis": "docker_analysis",
             "ai_review": "ai_review"      # Go to comprehensive AI review
         }
     )
+    
+    # Add edges for JavaScript and Docker analysis
+    workflow.add_conditional_edges(
+        "javascript_analysis",
+        check_analysis_completion,
+        {
+            "docker_analysis": "docker_analysis",
+            "ai_review": "ai_review"
+        }
+    )
+    
+    # Add edge from Docker analysis to AI review
+    workflow.add_edge("docker_analysis", "ai_review")
     
     # AI review to Notion routing
     workflow.add_conditional_edges(

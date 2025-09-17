@@ -1,0 +1,44 @@
+```mermaid
+flowchart TD
+    START([Start]) --> dec1{Route Workflow Start}
+    
+    dec1 -->|Chat Mode| qna_agent[QnA Agent]
+    dec1 -->|Analysis Mode| file_discovery[File Discovery]
+    
+    qna_agent --> dec2{Route After QnA}
+    dec2 -->|Analysis Requested| file_discovery
+    dec2 -->|End| END([End])
+    
+    file_discovery --> dec3{Route Language Analysis}
+    dec3 -->|No Files| END
+    dec3 -->|Python Files| python_analysis[Python Analysis]
+    dec3 -->|JavaScript Files| javascript_analysis[JavaScript Analysis]
+    dec3 -->|Docker Files| docker_analysis[Docker Analysis]
+    
+    python_analysis --> dec4{Check Analysis Completion}
+    dec4 -->|Need JS Analysis| javascript_analysis
+    dec4 -->|Need Docker Analysis| docker_analysis
+    dec4 -->|All Complete| ai_review[AI Review]
+    
+    javascript_analysis --> dec5{Check Analysis Completion}
+    dec5 -->|Need Docker Analysis| docker_analysis
+    dec5 -->|All Complete| ai_review
+    
+    docker_analysis --> ai_review
+    
+    ai_review --> dec6{Route After AI Review}
+    dec6 -->|Notion Reporting Enabled| notion_report[Notion Report]
+    dec6 -->|End| END
+    
+    notion_report --> END
+    
+    classDef start fill:#2ECC71,stroke:#000,stroke-width:2px,color:#000;
+    classDef end fill:#E74C3C,stroke:#000,stroke-width:2px,color:#fff;
+    classDef agent fill:#3498DB,stroke:#000,stroke-width:2px,color:#fff;
+    classDef decision fill:#F39C12,stroke:#000,stroke-width:2px,color:#000;
+    
+    class START start;
+    class END end;
+    class qna_agent,file_discovery,python_analysis,javascript_analysis,docker_analysis,ai_review,notion_report agent;
+    class dec1,dec2,dec3,dec4,dec5,dec6 decision;
+```

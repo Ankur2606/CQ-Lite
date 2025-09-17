@@ -1,0 +1,67 @@
+```mermaid
+flowchart TD
+    START([Start]) --> dec1{Chat or Analysis}
+    
+    subgraph "Input Processing"
+        dec1 -->|Chat Mode| qna_agent[QnA Agent]
+        dec1 -->|Analysis Mode| file_discovery[File Discovery Agent]
+    end
+    
+    qna_agent -- "Context & Query" --> dec2{Analysis Requested?}
+    dec2 -->|Yes| file_discovery
+    dec2 -->|No| END([End])
+    
+    file_discovery -- "Discovered Files & Strategy" --> dec3{File Types}
+    
+    subgraph "Language-Specific Analysis"
+        dec3 -->|Python Files| python_analysis["Python Analysis Agent
+        - AST Analysis
+        - Security Checks
+        - AI Enhancement"]
+        
+        dec3 -->|JavaScript Files| javascript_analysis["JavaScript Analysis Agent
+        - Syntax Analysis 
+        - Security Checks
+        - AI Enhancement"]
+        
+        dec3 -->|Docker Files| docker_analysis["Docker Analysis Agent
+        - Security Analysis
+        - Best Practice Checks
+        - Optimization Review"]
+    end
+    
+    dec3 -->|No Files| END
+    
+    python_analysis -- "Python Issues" --> dec4{More Analysis?}
+    dec4 -->|JS Needed| javascript_analysis
+    dec4 -->|Docker Needed| docker_analysis
+    dec4 -->|All Complete| ai_review["AI Review Agent
+    - Comprehensive Analysis
+    - Issue Prioritization
+    - Architectural Review"]
+    
+    javascript_analysis -- "JavaScript Issues" --> dec5{Docker Needed?}
+    dec5 -->|Yes| docker_analysis
+    dec5 -->|No| ai_review
+    
+    docker_analysis -- "Docker Issues" --> ai_review
+    
+    ai_review -- "Complete Analysis & Recommendations" --> dec6{Notion Report?}
+    dec6 -->|Yes| notion_report["Notion Report Agent
+    - Format Results
+    - Generate Report
+    - Send to Notion API"]
+    dec6 -->|No| END
+    
+    notion_report --> END
+    
+    classDef start fill:#2ECC71,stroke:#000,stroke-width:2px,color:#000;
+    classDef end fill:#E74C3C,stroke:#000,stroke-width:2px,color:#fff;
+    classDef agent fill:#3498DB,stroke:#000,stroke-width:2px,color:#fff;
+    classDef decision fill:#F39C12,stroke:#000,stroke-width:2px,color:#000;
+    
+    class START start;
+    class END end;
+    class qna_agent,file_discovery,python_analysis,javascript_analysis,docker_analysis,ai_review,notion_report agent;
+    class dec1,dec2,dec3,dec4,dec5,dec6 decision;
+```

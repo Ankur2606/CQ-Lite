@@ -1,6 +1,6 @@
 import ast
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from radon.complexity import cc_visit
 from radon.metrics import mi_visit
 import subprocess
@@ -12,12 +12,43 @@ class PythonAnalyzer:
     def __init__(self):
         self.duplicate_threshold = 0.8
         
-    async def analyze(self, file_path: str) -> Tuple[List[CodeIssue], FileMetrics]:
-        """Analyze a Python file"""
-        issues = []
+    async def analyze(self, file_path: str, github_files: List[Dict] = None) -> Tuple[List[CodeIssue], FileMetrics]:
+        """
+        Analyze a Python file, either from local path or GitHub repository.
         
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        Args:
+            file_path: Path to the file to analyze
+            github_files: Optional list of GitHub file dictionaries
+            
+        Returns:
+            Tuple of (issues, metrics)
+        """
+        issues = []
+        temp_file_path = None
+        
+        # Handle GitHub repository files
+        if github_files:
+            from .github_helpers import find_github_file_by_path, create_temp_file_from_github_data
+            
+            github_file = find_github_file_by_path(github_files, file_path)
+            if github_file:
+                content = github_file.get("content", "")
+                # Create a temporary file for analysis tools that require a file path
+                temp_file_path = create_temp_file_from_github_data(content, file_path)
+                analysis_file_path = temp_file_path
+            else:
+                return [], FileMetrics(
+                    file_path=file_path,
+                    language="python",
+                    lines_of_code=0,
+                    complexity_score=0.0,
+                    duplication_percentage=0.0
+                )
+        else:
+            # Regular local file analysis
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            analysis_file_path = file_path
         
         try:
             tree = ast.parse(content)
@@ -43,6 +74,14 @@ class PythonAnalyzer:
                 complexity_score=0.0,
                 duplication_percentage=0.0
             )
+            
+            # Clean up temp file if created
+            if temp_file_path:
+                try:
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+                
             return issues, metrics
         
         # Complexity analysis

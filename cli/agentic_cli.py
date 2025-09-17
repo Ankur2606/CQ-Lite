@@ -3,13 +3,21 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-
+from dotenv import load_dotenv
+load_dotenv()
 # Add the parent directory to the path so we can import backend modules
 sys.path.append(str(Path(__file__).parent.parent))
 
 from backend.agents.workflow import create_agentic_analysis_workflow
 from backend.agents.state_schema import CodeAnalysisState
 from cli.formatters import format_analysis_result
+from cli.env_helpers import (
+    check_github_token, 
+    check_notion_credentials, 
+    check_ai_credentials,
+    print_env_var_help,
+    MissingEnvVarError
+)
 
 # Initialize the agentic workflow
 agentic_workflow = create_agentic_analysis_workflow()
@@ -20,33 +28,114 @@ def cli():
     pass
 
 @cli.command()
-@click.argument('path', type=click.Path(exists=True))
+def env():
+    """Show information about required environment variables"""
+    click.echo("📝 Code Quality Reviewer - Environment Variables Guide")
+    click.echo("\nThis tool requires various API keys for full functionality.")
+    
+    # Check status of all environment variables
+    github_token = os.environ.get("GITHUB_API_TOKEN")
+    google_api_key = os.environ.get("GOOGLE_API_KEY")
+    nebius_api_key = os.environ.get("NEBIUS_API_KEY")
+    notion_token = os.environ.get("NOTION_TOKEN")
+    notion_page_id = os.environ.get("NOTION_PAGE_ID")
+    
+    click.echo("\nCurrent Environment Status:")
+    click.echo(f"  ✓ GITHUB_API_TOKEN: {'Set' if github_token else 'Not set'} - Required for GitHub repository analysis")
+    click.echo(f"  ✓ GOOGLE_API_KEY: {'Set' if google_api_key else 'Not set'} - Required for Gemini AI analysis")
+    click.echo(f"  ✓ NEBIUS_API_KEY: {'Set' if nebius_api_key else 'Not set'} - Required for Nebius AI analysis")
+    click.echo(f"  ✓ NOTION_TOKEN: {'Set' if notion_token else 'Not set'} - Required for Notion integration")
+    click.echo(f"  ✓ NOTION_PAGE_ID: {'Set' if notion_page_id else 'Not set'} - Required for Notion integration")
+    
+    # Print detailed setup instructions for any missing variables
+    missing = []
+    if not github_token:
+        missing.append("GITHUB_API_TOKEN")
+    if not google_api_key:
+        missing.append("GOOGLE_API_KEY")
+    if not nebius_api_key:
+        missing.append("NEBIUS_API_KEY")
+    if not notion_token:
+        missing.append("NOTION_TOKEN")
+    if not notion_page_id:
+        missing.append("NOTION_PAGE_ID")
+    
+    if missing:
+        print_env_var_help(missing)
+    else:
+        click.echo("\n✅ All environment variables are set. You're good to go!")
+
+@cli.command()
+@click.argument('path', type=click.Path(exists=True), required=False)
+@click.option('--repourl', '-r', help='GitHub repository URL to analyze')
 @click.option('--format', '-f', type=click.Choice(['text', 'json']), default='text', help='Output format')
 @click.option('--severity', '-s', type=click.Choice(['low', 'medium', 'high', 'critical']), help='Filter by severity')
 @click.option('--insights', '-i', is_flag=True, help='Generate AI insights')
 @click.option('--model', type=click.Choice(['gemini', 'nebius']), default='gemini', help='Choose the AI model for analysis')
 @click.option('--quick', is_flag=True, help='Run a quick analysis, skipping vector store and using Nebius model.')
 @click.option('--notion', is_flag=True, help='Push analysis results to Notion (requires NOTION_TOKEN and NOTION_PAGE_ID env vars)')
-def analyze(path, format, severity, insights, model, quick, notion):
+@click.option('--max-files', type=int, default=100, help='Maximum number of files to analyze when using --repourl')
+def analyze(path, repourl, format, severity, insights, model, quick, notion, max_files):
     """Agentic code analysis using LangGraph orchestration"""
+    
+    # Ensure either path or repourl is provided
+    if not path and not repourl:
+        click.echo("❌ Error: Either PATH or --repourl must be provided", err=True)
+        return 1
+    
+    # Check AI API credentials are available
+    if not check_ai_credentials(model):
+        click.echo(f"❌ Error: Missing AI credentials for {model} model", err=True)
+        return 1
+    
+    # Handle GitHub repository URL
+    github_files = []
+    target_path = path or "github-repo"
+    
+    if repourl:
+        # Check GitHub API token is available
+        if not check_github_token():
+            click.echo("❌ Error: GitHub API token is required for repository analysis", err=True)
+            return 1
+            
+        from backend.tools.github_tool import fetch_repo_files, GitHubAPIException, parse_github_url
+        
+        try:
+            click.echo(f"🔍 Fetching code from GitHub repository: {repourl}")
+            repo_info = parse_github_url(repourl)
+            click.echo(f"📦 Repository: {repo_info['owner']}/{repo_info['repo']}")
+            
+            # Fetch repository files
+            github_files = fetch_repo_files(repourl, max_files=max_files)
+            click.echo(f"📚 Downloaded {len(github_files)} files for analysis")
+            
+            # Use repo name as target path if no path is provided
+            if not path:
+                target_path = f"github-repo-{repo_info['owner']}-{repo_info['repo']}"
+                
+        except (GitHubAPIException, ValueError) as e:
+            click.echo(f"❌ GitHub error: {str(e)}", err=True)
+            return 1
+        except Exception as e:
+            click.echo(f"❌ Unexpected error: {str(e)}", err=True)
+            return 1
     
     if quick:
         model = 'nebius'
-        click.echo(f"🚀 Running quick analysis of: {path} using {model} model, skipping vector store.")
+        click.echo(f"🚀 Running quick analysis of: {target_path} using {model} model, skipping vector store.")
     else:
-        click.echo(f"🤖 Starting agentic analysis of: {path} using {model} model")
+        click.echo(f"🤖 Starting agentic analysis of: {target_path} using {model} model")
     
     if notion:
         click.echo("📝 Notion reporting enabled - results will be pushed to Notion")
-        # Check if environment variables are set
-        import os
-        if not os.getenv("NOTION_TOKEN") or not os.getenv("NOTION_PAGE_ID"):
-            click.echo("⚠️  Warning: NOTION_TOKEN and/or NOTION_PAGE_ID not set. Notion reporting will be skipped.")
+        # Check if Notion credentials are set
+        if not check_notion_credentials():
+            click.echo("⚠️  Warning: Notion reporting will be skipped due to missing credentials.")
     
     async def run_agentic_analysis():
         # Initialize agent state from CLI parameters
         initial_state = CodeAnalysisState(
-            target_path=path,
+            target_path=target_path,
             include_patterns=["*.py", "*.js", "*.ts", "*.jsx", "*.tsx"],
             severity_filter=severity,
             insights_requested=insights,
@@ -72,7 +161,9 @@ def analyze(path, format, severity, insights, model, quick, notion):
             current_step="start",
             errors=[],
             analysis_complete=False,
-            final_report=None
+            final_report=None,
+            github_files=github_files if github_files else [],
+            is_github_repo=bool(repourl)
         )
         
         try:
@@ -156,10 +247,71 @@ def analyze(path, format, severity, insights, model, quick, notion):
     asyncio.run(run_agentic_analysis())
 
 @cli.command()
+@click.argument('path', type=click.Path(exists=True), required=False)
+@click.option('--repourl', '-r', help='GitHub repository URL to analyze')
+@click.option('--format', '-f', type=click.Choice(['text', 'json', 'md', 'html', 'notion']), default='text', help='Output format')
+@click.option('--service', type=click.Choice(['gemini', 'nebius']), default='gemini', help='AI service to use for report generation')
+@click.option('--notion', is_flag=True, help='Push comprehensive report to Notion (requires NOTION_TOKEN and NOTION_PAGE_ID env vars)')
+@click.option('--max-files', type=int, default=100, help='Maximum number of files to analyze when using --repourl')
+def review(path, repourl, format, service, notion, max_files):
+    """Generate a comprehensive code review with analysis and recommendations"""
+    # Always enable insights for reviews
+    insights = True
+    
+    # If notion is specified as format or flag, enable Notion reporting
+    notion_enabled = notion or format == 'notion'
+    
+    if not path and not repourl:
+        click.echo("❌ Error: Either PATH or --repourl must be provided", err=True)
+        return 1
+    
+    # Check AI API credentials are available
+    if not check_ai_credentials(service):
+        click.echo(f"❌ Error: Missing AI credentials for {service} model", err=True)
+        return 1
+    
+    # If GitHub repo URL is provided, check for GitHub token
+    if repourl and not check_github_token():
+        click.echo("❌ Error: GitHub API token is required for repository analysis", err=True)
+        return 1
+    
+    # Check Notion credentials if Notion reporting is enabled
+    if notion_enabled and not check_notion_credentials():
+        click.echo("⚠️  Warning: Notion reporting will be skipped due to missing credentials.")
+    
+    # This is a wrapper around analyze with pre-configured options optimized for reviews
+    click.echo(f"📝 Generating comprehensive code review using {service} AI service")
+    
+    if notion_enabled:
+        click.echo("📊 Review will be pushed to Notion")
+    
+    # Call analyze with review-optimized parameters
+    return analyze(
+        path=path,
+        repourl=repourl,
+        format=format if format != 'notion' else 'text',  # Handle notion format specially
+        severity=None,  # Include all severities
+        insights=True,  # Always enable insights
+        model=service,
+        quick=False,  # Never use quick mode for reviews
+        notion=notion_enabled,
+        max_files=max_files
+    )
+
+@cli.command()
 @click.option('--context', '-c', type=click.Path(exists=True), help='Path to analyzed code for context')
 @click.option('--notion', is_flag=True, help='Push analysis results to Notion when analysis is triggered (requires NOTION_TOKEN and NOTION_PAGE_ID env vars)')
 def chat(context, notion):
     """Interactive Q&A using agentic workflow with analysis triggering"""
+    # Check AI API credentials are available (default to gemini model)
+    if not check_ai_credentials("gemini"):
+        click.echo("❌ Error: Missing AI credentials for chat functionality", err=True)
+        return 1
+    
+    # Check Notion credentials if Notion reporting is enabled
+    if notion and not check_notion_credentials():
+        click.echo("⚠️  Warning: Notion reporting will be skipped due to missing credentials.")
+    
     click.echo("💬 Agentic chat mode activated!")
     click.echo("You can ask questions about your code or request analysis (e.g., 'analyze ./cli' or 'review the codebase at ./src')")
     
@@ -253,5 +405,17 @@ def chat(context, notion):
             click.echo("\n👋 Goodbye!")
             break
 
+def check_env_setup():
+    """Check if environment variables are set up and provide a gentle reminder if not."""
+    # Check for key environment variables
+    has_github = os.environ.get("GITHUB_API_TOKEN") is not None
+    has_ai = (os.environ.get("GOOGLE_API_KEY") is not None or
+              os.environ.get("NEBIUS_API_KEY") is not None)
+    
+    if not has_github or not has_ai:
+        click.echo("⚠️  Some environment variables are missing. Some features may not work properly.")
+        click.echo("💡 Run 'python -m cli env' for setup information.")
+
 if __name__ == '__main__':
+    check_env_setup()
     cli()

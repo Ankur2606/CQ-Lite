@@ -1,0 +1,102 @@
+```mermaid
+flowchart TD
+    subgraph "User Interface"
+        CLI["Command Line Interface
+        cli/agentic_cli.py"]
+        WebUI["Web UI (Future)
+        frontend/app"]
+    end
+    
+    subgraph "Orchestration Layer"
+        Workflow["LangGraph Workflow
+        backend/agents/workflow.py"]
+        StateSchema["State Schema
+        backend/agents/state_schema.py"]
+    end
+    
+    subgraph "Agent Layer"
+        FileDiscovery["File Discovery Agent
+        backend/agents/file_discovery_agent.py"]
+        PythonAnalysis["Python Analysis Agent
+        backend/agents/python_analysis_agent.py"]
+        JSAnalysis["JavaScript Analysis Agent
+        backend/agents/javascript_analysis_agent.py"]
+        DockerAnalysis["Docker Analysis Agent
+        backend/agents/docker_analysis_agent.py"]
+        AIReview["AI Review Agent
+        backend/agents/ai_review_agent.py"]
+        QnA["QnA Agent
+        backend/agents/qna_agent.py"]
+        NotionReport["Notion Report Agent
+        backend/agents/notion_report_agent.py"]
+    end
+    
+    subgraph "Analysis Layer"
+        PythonAnalyzer["Python Analyzer
+        backend/analyzers/python_analyzer.py"]
+        JSAnalyzer["JavaScript Analyzer
+        backend/analyzers/javascript_analyzer.py"]
+        DockerAnalyzer["Docker Analyzer
+        backend/analyzers/docker_analyzer.py"]
+    end
+    
+    subgraph "Tools & Services"
+        VectorStore["Vector Store Tool
+        backend/tools/vector_store_tool.py"]
+        GitHubTool["GitHub Tool
+        backend/tools/github_tool.py"]
+        NotionTool["Notion Tool
+        backend/tools/notion_tool.py"]
+        LLMService["LLM Service
+        backend/services/llm_service.py"]
+        GeminiService["Gemini Service
+        backend/services/gemini_service.py"]
+    end
+    
+    %% User Interface to Orchestration
+    CLI --> Workflow
+    WebUI --> Workflow
+    
+    %% Orchestration to Agents
+    Workflow --> FileDiscovery
+    Workflow --> PythonAnalysis
+    Workflow --> JSAnalysis
+    Workflow --> DockerAnalysis
+    Workflow --> AIReview
+    Workflow --> QnA
+    Workflow --> NotionReport
+    
+    %% Agents to Analyzers
+    PythonAnalysis --> PythonAnalyzer
+    JSAnalysis --> JSAnalyzer
+    DockerAnalysis --> DockerAnalyzer
+    
+    %% Agents to Tools & Services
+    FileDiscovery --> GitHubTool
+    PythonAnalysis --> LLMService
+    JSAnalysis --> LLMService
+    DockerAnalysis --> LLMService
+    AIReview --> LLMService
+    QnA --> LLMService
+    QnA --> VectorStore
+    PythonAnalysis --> VectorStore
+    NotionReport --> NotionTool
+    
+    %% LLM Service to Specific Implementations
+    LLMService --> GeminiService
+    
+    %% State Schema connects to everything
+    StateSchema --- Workflow
+    
+    classDef interface fill:#2ECC71,stroke:#000,stroke-width:2px,color:#000;
+    classDef orchestration fill:#9B59B6,stroke:#000,stroke-width:2px,color:#fff;
+    classDef agent fill:#3498DB,stroke:#000,stroke-width:2px,color:#fff;
+    classDef analyzer fill:#F39C12,stroke:#000,stroke-width:2px,color:#000;
+    classDef tool fill:#E74C3C,stroke:#000,stroke-width:2px,color:#fff;
+    
+    class CLI,WebUI interface;
+    class Workflow,StateSchema orchestration;
+    class FileDiscovery,PythonAnalysis,JSAnalysis,DockerAnalysis,AIReview,QnA,NotionReport agent;
+    class PythonAnalyzer,JSAnalyzer,DockerAnalyzer analyzer;
+    class VectorStore,GitHubTool,NotionTool,LLMService,GeminiService tool;
+```

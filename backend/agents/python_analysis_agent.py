@@ -70,8 +70,27 @@ def build_vector_metadata(file_path: str, file_content: str, metrics: Dict[str, 
         "last_modified": "" # Placeholder
     }
 
-def read_file_content(file_path: str, max_chars: int = 2000) -> str:
-    """Read file content with size limit"""
+def read_file_content(file_path: str, github_files: List[Dict] = None, max_chars: int = 2000) -> str:
+    """
+    Read file content with size limit, either from local file or GitHub data.
+    
+    Args:
+        file_path: Path to the file
+        github_files: Optional list of GitHub file dictionaries
+        max_chars: Maximum number of characters to read
+        
+    Returns:
+        File content or error message
+    """
+    # Check if we have GitHub files
+    if github_files:
+        from backend.analyzers.github_helpers import find_github_file_by_path
+        github_file = find_github_file_by_path(github_files, file_path)
+        if github_file:
+            content = github_file.get("content", "")
+            return content[:max_chars] + "..." if len(content) > max_chars else content
+    
+    # Fall back to local file
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
@@ -147,13 +166,23 @@ def merge_and_enhance_issues(ast_issues: List[CodeIssue], ai_decisions: str, fil
     print("⚠️ Using original issues due to AI parsing failure")
     return ast_issues, file_metadata
 
-async def run_python_analysis(file_path: str) -> tuple[List[CodeIssue], any]:
-    """Run traditional Python analysis"""
+async def run_python_analysis(file_path: str, github_files: List[Dict] = None) -> tuple[List[CodeIssue], any]:
+    """
+    Run traditional Python analysis on a file, either from local path or GitHub repository.
+    
+    Args:
+        file_path: Path to the file
+        github_files: Optional list of GitHub file dictionaries
+        
+    Returns:
+        Tuple of (issues, metrics)
+    """
     analyzer = PythonAnalyzer()
     try:
-        issues, metrics = await analyzer.analyze(file_path)
+        issues, metrics = await analyzer.analyze(file_path, github_files)
         return issues, metrics
     except Exception as e:
+        print(f"❌ Error analyzing Python file {file_path}: {e}")
         return [], None
 
 def python_analysis_agent(state: CodeAnalysisState) -> CodeAnalysisState:
@@ -178,15 +207,18 @@ def python_analysis_agent(state: CodeAnalysisState) -> CodeAnalysisState:
 
     print(f"🐍 Analyzing {len(python_files)} Python files...")
     
+    # Check for GitHub files in state
+    github_files = state.get("github_files", [])
+    
     for file_path in python_files[:10]:  # Limit for demo
         print(f"📁 Analyzing: {file_path}")
         # Traditional AST + Tool Analysis
         import asyncio
-        ast_issues, metrics = asyncio.run(run_python_analysis(file_path))
+        ast_issues, metrics = asyncio.run(run_python_analysis(file_path, github_files))
         print(f"   Found {len(ast_issues)} issues in {file_path}")
         
         # AI-Enhanced Analysis Decision Making
-        file_content = read_file_content(file_path)
+        file_content = read_file_content(file_path, github_files)
         analysis_prompt = f"""As a Python code quality expert, analyze this file and make decisions:
 
 File: {file_path}

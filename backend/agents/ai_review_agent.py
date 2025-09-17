@@ -6,16 +6,35 @@ from backend.services.llm_service import get_llm_model
 from backend.models.analysis_models import CodeIssue, IssueSeverity, IssueCategory
 from .state_schema import CodeAnalysisState
 
-def read_codebase_context(discovered_files: Dict[str, List[str]], file_metadata: Dict[str, Dict] = None, force_full_content: bool = False) -> Dict[str, str]:
-    """Read the entire codebase for AI context with intelligent truncation"""
+def read_codebase_context(discovered_files: Dict[str, List[str]], file_metadata: Dict[str, Dict] = None, 
+                       github_files: List[Dict] = None, force_full_content: bool = False) -> Dict[str, str]:
+    """
+    Read the entire codebase for AI context with intelligent truncation.
+    Works with both local files and GitHub repository files.
+    """
     codebase_context = {}
     
     for language, files in discovered_files.items():
         for file_path in files:
             try:
+                # Check if we have GitHub files
+                content = None
+                if github_files:
+                    from backend.analyzers.github_helpers import find_github_file_by_path
+                    github_file = find_github_file_by_path(github_files, file_path)
+                    if github_file:
+                        content = github_file.get("content", "")
+                
+                # If no GitHub content, try to read local file
+                if content is None:
+                    try:
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                            content = f.read()
+                    except Exception:
+                        content = "Could not read file"
+                
                 if force_full_content:
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        codebase_context[file_path] = f.read()
+                    codebase_context[file_path] = content
                     continue
 
                 # Check if file should be truncated based on metadata
@@ -25,21 +44,17 @@ def read_codebase_context(discovered_files: Dict[str, List[str]], file_metadata:
                 
                 if is_truncated and description:
                     # Use description + code gist for truncated files
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        content = f.read()
-                        # Get first 100 characters as gist
-                        code_gist = content[:100] + "..." if len(content) > 100 else content
-                        codebase_context[file_path] = f"{description}\n\nCode gist: {code_gist}"
+                    # Get first 100 characters as gist
+                    code_gist = content[:100] + "..." if len(content) > 100 else content
+                    codebase_context[file_path] = f"{description}\n\nCode gist: {code_gist}"
                 else:
-                    # Read full content for non-truncated files
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                        content = f.read()
-                        # Limit content size for API (3000 chars is fine as per user request)
-                        if len(content) > 3000:
-                            content = content[:3000] + "\n... [truncated]"
-                        codebase_context[file_path] = content
-            except Exception:
-                codebase_context[file_path] = "Could not read file"
+                    # Use full content for non-truncated files
+                    # Limit content size for API (3000 chars is fine as per user request)
+                    if len(content) > 3000:
+                        content = content[:3000] + "\n... [truncated]"
+                    codebase_context[file_path] = content
+            except Exception as e:
+                codebase_context[file_path] = f"Could not read file: {str(e)}"
     
     return codebase_context
 
@@ -326,18 +341,39 @@ def extract_partial_ai_data(json_text: str) -> Dict[str, Any]:
             "error": "Complete parsing failure"
         }
 
-def find_line_number_for_snippet(file_path: str, snippet: str) -> int | None:
+def find_line_number_for_snippet(file_path: str, snippet: str, github_files: List[Dict] = None) -> int | None:
     """
     Finds the line number of a given code snippet in a file.
+    Works with both local files and GitHub repository files.
     Returns the 1-based line number or None if not found.
     """
-    if not snippet or not file_path or not os.path.exists(file_path):
+    if not snippet:
         return None
     
+    # Get file content (either from GitHub or local file)
+    lines = None
+    
+    # First check GitHub files
+    if github_files:
+        from backend.analyzers.github_helpers import find_github_file_by_path
+        github_file = find_github_file_by_path(github_files, file_path)
+        if github_file:
+            content = github_file.get("content", "")
+            lines = content.split('\n')
+    
+    # If not found in GitHub files, try local file
+    if lines is None:
+        if not file_path or not os.path.exists(file_path):
+            return None
+            
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                lines = f.readlines()
+        except Exception as e:
+            print(f"⚠️  Could not read file {file_path} to verify line number: {e}")
+            return None
+    
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            lines = f.readlines()
-        
         # Prepare the snippet for search - use the first non-empty line of the snippet
         snippet_lines = [line.strip() for line in snippet.strip().split('\n') if line.strip()]
         if not snippet_lines:
@@ -346,15 +382,15 @@ def find_line_number_for_snippet(file_path: str, snippet: str) -> int | None:
         search_line = snippet_lines[0]
 
         for i, line in enumerate(lines):
-            if search_line in line:
+            if isinstance(line, str) and search_line in line:
                 return i + 1 # Return 1-based line number
         
         return None # Snippet not found
     except Exception as e:
-        print(f"⚠️  Could not read file {file_path} to verify line number: {e}")
+        print(f"⚠️  Error finding line number for snippet in {file_path}: {e}")
         return None
 
-def convert_ai_issues_to_code_issues(ai_issues: List[Dict], issue_type: str = "enhanced") -> List[CodeIssue]:
+def convert_ai_issues_to_code_issues(ai_issues: List[Dict], issue_type: str = "enhanced", github_files: List[Dict] = None) -> List[CodeIssue]:
     """Convert AI-generated issues to CodeIssue objects with line number verification"""
     code_issues = []
     
@@ -402,7 +438,7 @@ def convert_ai_issues_to_code_issues(ai_issues: List[Dict], issue_type: str = "e
             file_path = ai_issue.get("file_path", "unknown")
             
             # --- LINE NUMBER VERIFICATION LOGIC ---
-            verified_line_number = find_line_number_for_snippet(file_path, code_snippet)
+            verified_line_number = find_line_number_for_snippet(file_path, code_snippet, github_files)
             
             if verified_line_number is None:
                 # If snippet not found, explicitly set line number to None
@@ -448,6 +484,7 @@ def ai_review_agent(state: CodeAnalysisState) -> CodeAnalysisState:
         # Read entire codebase for context with intelligent truncation
         discovered_files = state.get("discovered_files", {})
         file_metadata = state.get("file_metadata", {})
+        github_files = state.get("github_files", [])  # Get GitHub files if present
         
         total_files = sum(len(files) for files in discovered_files.values())
         force_full_content = total_files <= 5
@@ -470,7 +507,7 @@ def ai_review_agent(state: CodeAnalysisState) -> CodeAnalysisState:
 
         print(f"📊 File processing: {truncated_count} truncated (description only), {full_count} full content")
         
-        codebase_context = read_codebase_context(discovered_files, file_metadata, force_full_content=force_full_content)
+        codebase_context = read_codebase_context(discovered_files, file_metadata, github_files, force_full_content=force_full_content)
         
         # Create comprehensive analysis prompt
         analysis_prompt = create_comprehensive_analysis_prompt(state, codebase_context, file_metadata)
@@ -513,13 +550,16 @@ def ai_review_agent(state: CodeAnalysisState) -> CodeAnalysisState:
                         "error": f"AI review failed: {str(e)}"
                     }
         
+        # Get GitHub files from state if available
+        github_files = state.get("github_files", [])
+        
         # Convert AI issues to CodeIssue objects
         enhanced_issues = convert_ai_issues_to_code_issues(
-            ai_review.get("enhanced_issues", []), "enhanced"
+            ai_review.get("enhanced_issues", []), "enhanced", github_files
         )
         
         new_issues = convert_ai_issues_to_code_issues(
-            ai_review.get("new_issues_found", []), "new"
+            ai_review.get("new_issues_found", []), "new", github_files
         )
         
         # De-duplicate and merge issues

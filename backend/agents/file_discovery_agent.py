@@ -5,28 +5,62 @@ from typing import Dict, List
 from backend.services.llm_service import get_llm_model
 from .state_schema import CodeAnalysisState
 
+def process_github_files(github_files: List[Dict]) -> Dict[str, List[str]]:
+    """Process GitHub repository files and categorize by language"""
+    discovered_files = {"python": [], "javascript": [], "docker": []}
+    
+    for file in github_files:
+        file_path = file.get("file_path", "")
+        filename = file_path.lower()
+        # Use Path to extract extension, but keep original path as string
+        ext = Path(file_path).suffix.lower()
+        
+        if ext == '.py':
+            discovered_files["python"].append(file_path)
+        elif ext in ['.js', '.ts', '.jsx', '.tsx']:
+            discovered_files["javascript"].append(file_path)
+        elif ext == '.dockerfile' or filename.endswith('dockerfile') or '/dockerfile' in filename or '\\dockerfile' in filename:
+            discovered_files["docker"].append(file_path)
+    
+    return discovered_files
+
 def discover_files_by_language(target_path: str, include_patterns: List[str]) -> Dict[str, List[str]]:
     """Discover files and categorize by language"""
-    discovered_files = {"python": [], "javascript": []}
+    discovered_files = {"python": [], "javascript": [], "docker": []}
     path_obj = Path(target_path)
     
     if path_obj.is_file():
+        file_str = str(path_obj)
+        filename = file_str.lower()
         ext = path_obj.suffix.lower()
+        
         if ext == '.py':
-            discovered_files["python"].append(str(path_obj))
+            discovered_files["python"].append(file_str)
         elif ext in ['.js', '.ts', '.jsx', '.tsx']:
-            discovered_files["javascript"].append(str(path_obj))
+            discovered_files["javascript"].append(file_str)
+        elif ext == '.dockerfile' or filename.endswith('dockerfile') or '/dockerfile' in filename or '\\dockerfile' in filename:
+            discovered_files["docker"].append(file_str)
         return discovered_files
+    
+    # Special handling for Dockerfile (no extension)
+    dockerfile = path_obj / "Dockerfile"
+    if dockerfile.exists():
+        discovered_files["docker"].append(str(dockerfile))
     
     for pattern in include_patterns:
         files = list(path_obj.rglob(pattern))
         for file_path in files:
             if file_path.is_file():
+                file_str = str(file_path)
+                filename = file_str.lower()
                 ext = file_path.suffix.lower()
+                
                 if ext == '.py':
-                    discovered_files["python"].append(str(file_path))
+                    discovered_files["python"].append(file_str)
                 elif ext in ['.js', '.ts', '.jsx', '.tsx']:
-                    discovered_files["javascript"].append(str(file_path))
+                    discovered_files["javascript"].append(file_str)
+                elif ext == '.dockerfile' or filename.endswith('dockerfile') or '/dockerfile' in filename or '\\dockerfile' in filename:
+                    discovered_files["docker"].append(file_str)
     
     return discovered_files
 
@@ -83,13 +117,20 @@ def file_discovery_agent(state: CodeAnalysisState) -> CodeAnalysisState:
     target_path = state.get("detected_analysis_path") or state["target_path"]
     model_choice = state.get("detected_model_choice") or state.get("model_choice", "gemini")
     
-    print(f"🔍 Discovering files in: {target_path} (model: {model_choice})")
+    # Check if we're analyzing a GitHub repository
+    is_github_repo = state.get("is_github_repo", False)
+    github_files = state.get("github_files", [])
     
-    # Discover files using existing logic
-    discovered_files = discover_files_by_language(
-        target_path, 
-        state["include_patterns"]
-    )
+    if is_github_repo:
+        print(f"🔍 Processing GitHub repository with {len(github_files)} files (model: {model_choice})")
+        discovered_files = process_github_files(github_files)
+    else:
+        print(f"🔍 Discovering files in: {target_path} (model: {model_choice})")
+        # Discover files using existing logic for local files
+        discovered_files = discover_files_by_language(
+            target_path, 
+            state["include_patterns"]
+        )
     
     # Get the selected model from the state
     llm_model = get_llm_model(model_choice)

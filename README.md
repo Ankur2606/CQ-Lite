@@ -38,14 +38,40 @@ npm install
 npm run dev
 ```
 
+### Environment Setup
+
+This tool requires various API keys for different features:
+
+```bash
+# Create a .env file in the project root with the following variables:
+GOOGLE_API_KEY=your-gemini-api-key     # Required for Gemini AI analysis
+GITHUB_API_TOKEN=your-github-token     # Required for GitHub repository analysis
+NEBIUS_API_KEY=your-nebius-key         # Optional: Alternative AI model
+NOTION_TOKEN=your-notion-token         # Optional: For Notion integration
+NOTION_PAGE_ID=your-notion-page-id     # Optional: For Notion integration
+```
+
+You can check your environment setup with:
+```bash
+uv run python -m cli env
+```
+
 ### CLI Usage
 ```bash
 # Analyze code
 uv run python -m cli analyze ./src
 
+# Analyze GitHub repository
+uv run python -m cli analyze --repourl https://github.com/username/repo
+
+# Generate comprehensive review
+uv run python -m cli review ./src
+
 # Start interactive chat
 uv run python -m cli chat
 ```
+
+See [docs/CLI.md](docs/CLI.md) for comprehensive CLI documentation.
 
 ## Project Structure
 

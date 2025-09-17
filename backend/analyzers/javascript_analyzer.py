@@ -9,12 +9,33 @@ class JavaScriptAnalyzer:
     def __init__(self):
         self.complexity_threshold = 10
         
-    async def analyze(self, file_path: str) -> Tuple[List[CodeIssue], FileMetrics]:
-        """Analyze a JavaScript/TypeScript file"""
+    async def analyze(self, file_path: str, github_files=None) -> Tuple[List[CodeIssue], FileMetrics]:
+        """
+        Analyze a JavaScript/TypeScript file, either local or from GitHub
+        
+        Args:
+            file_path: Path to the file
+            github_files: Optional list of GitHub file dictionaries
+            
+        Returns:
+            Tuple of (issues, metrics)
+        """
         issues = []
         
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        # Check if we have GitHub files
+        if github_files:
+            from backend.analyzers.github_helpers import find_github_file_by_path
+            github_file = find_github_file_by_path(github_files, file_path)
+            if github_file:
+                content = github_file.get("content", "")
+            else:
+                # Fall back to local file
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+        else:
+            # Read local file
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
         
         # Basic syntax and structure analysis
         syntax_issues = self._analyze_syntax(content, file_path)
@@ -204,9 +225,9 @@ class JavaScriptAnalyzer:
             lines_of_code=lines_of_code,
             complexity_score=complexity_score,
             duplication_percentage=0.0  # Simplified for now
-        )    
-   
- def _analyze_hardcoded_secrets(self, content: str, file_path: str) -> List[CodeIssue]:
+        )
+        
+    def _analyze_hardcoded_secrets(self, content: str, file_path: str) -> List[CodeIssue]:
         """Analyze for hardcoded secrets and API keys in JavaScript"""
         issues = []
         lines = content.splitlines()
@@ -263,7 +284,7 @@ class JavaScriptAnalyzer:
                         break  # Only report one issue per line
         
         return issues
-    
+        
     def _is_likely_secret_js(self, line: str, secret_type: str) -> bool:
         """Additional validation to reduce false positives for JavaScript"""
         line_lower = line.lower()

@@ -13,6 +13,10 @@ class CodeAnalysisState(TypedDict):
     skip_vector_store: bool
     chat_mode: bool
     
+    # GitHub Repository Support
+    github_files: List[Dict]  # List of files from GitHub API
+    is_github_repo: bool      # Flag indicating if we're analyzing a GitHub repo
+    
     # File Discovery & Routing
     discovered_files: Dict[str, List[str]]  # language -> file_paths
     current_language: Optional[str]
@@ -22,6 +26,7 @@ class CodeAnalysisState(TypedDict):
     all_issues: List[CodeIssue]
     python_issues: List[CodeIssue]
     javascript_issues: List[CodeIssue]
+    docker_issues: List[CodeIssue]
     file_metrics: List[FileMetrics]
     file_metadata: Dict[str, Dict]  # file_path -> metadata (truncated, description, etc.)
     
