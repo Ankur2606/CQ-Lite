@@ -12,7 +12,7 @@
   # Node.js version
   NODE_VERSION = "18"
   # Frontend environment variables
-  NEXT_PUBLIC_API_URL = "https://cq-lite-backend.onrender.com"
+  NEXT_PUBLIC_API_URL = "https://cq-lite.onrender.com"
 
 # Next.js specific settings
 [[plugins]]
