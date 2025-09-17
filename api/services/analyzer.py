@@ -44,6 +44,9 @@ class AnalysisService:
         print(f"Starting analysis on path: {path}")
         print(f"Using service: {service}")
         print(f"Include patterns: {include_patterns}")
+        
+        # For server API, always skip vector store operations to improve performance
+        # This is similar to the CLI's --quick option
         """
         Analyze code at the given path using the agentic workflow
         
@@ -62,7 +65,7 @@ class AnalysisService:
             severity_filter=None,
             insights_requested=True,
             model_choice=service.value,
-            skip_vector_store=False,
+            skip_vector_store=True,  # Skip vector store for server API to improve performance
             chat_mode=False,
             discovered_files={},
             file_analysis_complete={},
