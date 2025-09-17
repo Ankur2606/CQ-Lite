@@ -31,17 +31,14 @@ def ensure_chroma_directory_exists():
 # --- Embedding Model ---
 def get_embedding_model() -> CustomEmbeddingFunction:
     """Initializes and returns a ChromaDB-compatible embedding function for Nebius AI."""
-    # Ensure the API key is set in the environment
     if "NEBIUS_API_KEY" not in os.environ:
         raise ValueError("NEBIUS_API_KEY environment variable not set.")
     
-    # Instantiate the OpenAI client for Nebius AI
     client = OpenAI(
         base_url="https://api.studio.nebius.com/v1/",
         api_key=os.environ.get("NEBIUS_API_KEY")
     )
     
-    # Return the custom function wrapper
     return CustomEmbeddingFunction(client)
 
 def get_chroma_client():
@@ -84,22 +81,16 @@ def add_to_vector_store(
         embedding_model = get_embedding_model()
         client = get_chroma_client()
         
-        # Get or create the collection
         collection = client.get_or_create_collection(
             name=COLLECTION_NAME,
             embedding_function=embedding_model
         )
 
-        # The document to be embedded and stored
         document_content = f"Description: {description}\n\nCode:\n{code}"
         
-        # The ID for the document will be the file path to ensure uniqueness
         doc_id = file_path
-
-        # Sanitize metadata before adding
         sanitized_metadata = _sanitize_metadata(metadata)
 
-        # Add the document to the collection
         collection.add(
             ids=[doc_id],
             documents=[document_content],
@@ -114,7 +105,6 @@ def add_to_vector_store(
         print(f"❌ {error_message}")
         return error_message
 
-# --- Utility function to query the vector store (for the Q&A agent) ---
 def query_vector_store(query: str, n_results: int = 5) -> List[Dict[str, Any]]:
     """
     Queries the vector store for documents related to the user's query.
@@ -132,7 +122,6 @@ def query_vector_store(query: str, n_results: int = 5) -> List[Dict[str, Any]]:
             n_results=n_results
         )
 
-        # Format the results to be more useful
         formatted_results = []
         if results and results.get("documents"):
             for i, doc in enumerate(results["documents"][0]):
@@ -149,10 +138,8 @@ def query_vector_store(query: str, n_results: int = 5) -> List[Dict[str, Any]]:
         return [{"error": str(e)}]
 
 if __name__ == '__main__':
-    # Example usage for testing the tool directly
     print("Testing vector store tool...")
     
-    # Mock data based on the desired schema
     mock_metadata = {
         "file_path": "src/utils/parser.py",
         "file_type": ".py",
@@ -160,14 +147,15 @@ if __name__ == '__main__':
         "functions": ["parse_json", "clean_data"],
         "classes": ["Parser"],
         "num_lines": 240,
-        "commit_hash": "a1b2c3d", # Example data
-        "last_modified": "2025-09-16T14:00:00Z" # Example data
+        "commit_hash": "a1b2c3d", 
+        "last_modified": "2025-09-16T14:00:00Z" 
     }
     
     mock_description = "A utility module for parsing and cleaning data. Contains the Parser class."
     mock_code = 'class Parser:\n    def parse_json(self, data):\n        return json.loads(data)'
 
-    # Test adding to the store
+    
+    
     add_result = add_to_vector_store.invoke({
         "file_path": "src/utils/parser.py",
         "description": mock_description,
@@ -176,7 +164,6 @@ if __name__ == '__main__':
     })
     print(f"Add Result: {add_result}")
 
-    # Test querying the store
     print("\nQuerying for 'parser'...")
     query_results = query_vector_store("parser")
     print(f"Query Results: {query_results}")

@@ -14,7 +14,7 @@ uv run python -m cli [COMMAND] [ARGUMENTS...] [OPTIONS...]
 Perform code analysis on a directory or GitHub repository.
 
 ```
-uv run python -m cli analyze [PATH] [OPTIONS]
+uv run python -m cli.agentic_cli analyze [PATH] [OPTIONS]
   --repourl, -r TEXT                  GitHub repository URL to analyze
   --format, -f [text|json]            Output format (default: text)
   --severity, -s [low|medium|high|critical]
@@ -30,7 +30,7 @@ uv run python -m cli analyze [PATH] [OPTIONS]
 Generate comprehensive code review with analysis and recommendations.
 
 ```
-uv run python -m cli review [PATH] [OPTIONS]
+uv run python -m cli.agentic_cli review [PATH] [OPTIONS]
   --repourl, -r TEXT                  GitHub repository URL to analyze
   --format, -f [text|json|md|html|notion]
                                       Output format (default: text)
