@@ -18,7 +18,7 @@ def main():
     Command-line entry point for starting the API server
     """
     parser = argparse.ArgumentParser(
-        description="Start the Code Quality Intelligence Agent API server"
+        description="Start the CQ Lite API server"
     )
     parser.add_argument(
         "--port",

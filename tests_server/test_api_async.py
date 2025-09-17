@@ -1,5 +1,5 @@
 """
-Advanced API tests for Code Quality Intelligence Agent with asyncio and parallel testing
+Advanced API tests for CQ Lite with asyncio and parallel testing
 """
 
 import aiohttp
@@ -305,7 +305,7 @@ class ApiTester:
 
 def parse_args():
     """Parse command line arguments"""
-    parser = argparse.ArgumentParser(description="Test the Code Quality Intelligence Agent API")
+    parser = argparse.ArgumentParser(description="Test the CQ Lite API")
     parser.add_argument("--url", default=BASE_URL, help="Base URL of the API server")
     parser.add_argument("--repo", default="https://github.com/Ankur2606/CQ-Lite", 
                        help="GitHub repository URL to test")

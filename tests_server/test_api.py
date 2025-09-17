@@ -1,5 +1,5 @@
 """
-Test script for Code Quality Intelligence Agent API endpoints
+Test script for CQ Lite API endpoints
 """
 
 import requests

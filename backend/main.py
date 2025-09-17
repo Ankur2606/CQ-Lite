@@ -13,7 +13,7 @@ from .services.gemini_service import GeminiService
 from .models.analysis_models import AnalysisResult, ChatMessage, ChatResponse
 
 app = FastAPI(
-    title="Code Quality Intelligence Agent",
+    title="CQ Lite",
     description="AI-powered code analysis and quality insights",
     version="0.1.0"
 )
@@ -41,7 +41,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "Code Quality Intelligence Agent API"}
+    return {"message": "CQ Lite API"}
 
 @app.post("/api/analyze", response_model=AnalysisResult)
 async def analyze_code(request: AnalyzeRequest):

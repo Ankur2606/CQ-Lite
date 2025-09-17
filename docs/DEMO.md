@@ -1,14 +1,14 @@
 # Demo Script
 
-## Code Quality Intelligence Agent Demo
+## CQ Lite Demo
 
 ### Overview
-This demo showcases the AI-powered code analysis capabilities, including AST-based analytics, security detection, and conversational AI insights.
+This demo showcases the AI-powered code analysis capabilities of CQ Lite, including AST-based analytics, security detection, and conversational AI insights.
 
 ### Demo Flow (10 minutes)
 
 #### 1. Introduction (1 minute)
-"Today I'll demonstrate our Code Quality Intelligence Agent - an AI-powered tool that provides deep insights into code quality using AST analysis and Gemini AI."
+"Today I'll demonstrate CQ Lite - an AI-powered tool that provides deep insights into code quality using AST analysis and Gemini AI."
 
 **Key Points:**
 - AST-based analysis for Python and JavaScript

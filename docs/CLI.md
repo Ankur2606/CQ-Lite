@@ -1,10 +1,10 @@
-# CLI Documentation
+# CQ Lite CLI Documentation
 
-This document provides comprehensive documentation for the Code Quality Reviewer command-line interface.
+This document provides comprehensive documentation for the CQ Lite command-line interface.
 
 ## Overview
 
-The Code Quality Reviewer CLI offers powerful tools for analyzing code quality, security vulnerabilities, and maintainability. It supports both local file analysis and GitHub repository analysis.
+The CQ Lite CLI offers powerful tools for analyzing code quality, security vulnerabilities, and maintainability. It supports both local file analysis and GitHub repository analysis.
 
 ## Requirements
 

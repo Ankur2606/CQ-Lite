@@ -13,7 +13,7 @@ from cli.formatters import format_analysis_result, format_chat_response
 
 @click.group()
 def cli():
-    """Code Quality Intelligence Agent - AI-powered code analysis tool"""
+    """CQ Lite - AI-powered code analysis tool"""
     pass
 
 @cli.command()

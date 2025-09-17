@@ -1,5 +1,5 @@
 """
-FastAPI server for Code Quality Intelligence Agent.
+FastAPI server for CQ Lite.
 Provides API endpoints for GitHub repository analysis, file uploads, and dependency visualization.
 """
 
@@ -28,7 +28,7 @@ from api.services.analyzer import AnalysisService
 from api.services.dependency_graph import DependencyGraphService
 
 app = FastAPI(
-    title="Code Quality Intelligence Agent API",
+    title="CQ Lite API",
     description="API for analyzing code quality and generating dependency graphs",
     version="1.0.0"
 )
@@ -53,7 +53,7 @@ app.include_router(graph.router, prefix="/api", tags=["Dependency Graph"])
 async def root():
     """API root endpoint with basic information"""
     return {
-        "name": "Code Quality Intelligence Agent API",
+        "name": "CQ Lite API",
         "version": "1.0.0",
         "docs": "/docs",
         "redoc": "/redoc"

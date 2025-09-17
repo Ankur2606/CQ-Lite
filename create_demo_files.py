@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Create demo files for testing the Code Quality Intelligence Agent
+Create demo files for testing CQ Lite
 """
 
 def create_python_demo():
@@ -253,7 +253,7 @@ console.log("Demo JavaScript file loaded");
 
 def main():
     """Create all demo files"""
-    print("🎯 Creating demo files for Code Quality Intelligence Agent...")
+    print("🎯 Creating demo files for CQ Lite...")
     create_python_demo()
     create_javascript_demo()
     print("\n🚀 Demo files created! You can now test with:")

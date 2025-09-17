@@ -1,7 +1,7 @@
 [project]
-name = "code-quality-agent"
+name = "cq-lite"
 version = "0.1.0"
-description = "AI-powered code quality intelligence agent"
+description = "CQ Lite - AI-powered code quality analysis tool"
 requires-python = ">=3.9"
 authors = [
     {name = "Developer", email = "developer@example.com"}

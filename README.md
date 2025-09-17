@@ -1,8 +1,8 @@
-# Code Quality Intelligence Agent
+# CQ Lite
 
 <img width="1024" height="1024" alt="image" src="https://github.com/user-attachments/assets/80cbfc6f-eef5-4578-b7ee-5bc5463558ec" />
 
-An AI-powered code analysis tool that provides deep insights into code quality, security, and maintainability using AST-based analytics and Gemini AI.
+CQ Lite - An AI-powered code analysis tool that provides deep insights into code quality, security, and maintainability using AST-based analytics and Gemini AI.
 
 ## Features
 

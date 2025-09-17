@@ -38,6 +38,10 @@ async def analyze_uploaded_files(
     if not files:
         raise HTTPException(status_code=400, detail="No files uploaded")
     
+    # Check file limit (max 12 files)
+    if len(files) > 12:
+        raise HTTPException(status_code=400, detail="Maximum 12 files allowed for upload")
+    
     # Generate a job ID
     job_id = str(uuid.uuid4())
     

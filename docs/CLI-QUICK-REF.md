@@ -1,7 +1,7 @@
 # CLI Quick Reference Guide
 
 ## NAME
-`cli` - Code Quality Intelligence Agent CLI
+`cli` - CQ Lite CLI
 
 ## SYNOPSIS
 ```

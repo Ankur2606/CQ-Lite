@@ -2,7 +2,7 @@
 
 ## System Design
 
-The Code Quality Intelligence Agent is built with a modern, scalable architecture that separates concerns between analysis, AI processing, and user interfaces.
+CQ Lite is built with a modern, scalable architecture that separates concerns between analysis, AI processing, and user interfaces.
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐

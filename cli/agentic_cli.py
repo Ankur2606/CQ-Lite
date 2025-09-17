@@ -24,13 +24,13 @@ agentic_workflow = create_agentic_analysis_workflow()
 
 @click.group()
 def cli():
-    """Code Quality Intelligence Agent - Agentic AI-powered analysis"""
+    """CQ Lite - Agentic AI-powered analysis"""
     pass
 
 @cli.command()
 def env():
     """Show information about required environment variables"""
-    click.echo("📝 Code Quality Reviewer - Environment Variables Guide")
+    click.echo("📝 CQ Lite - Environment Variables Guide")
     click.echo("\nThis tool requires various API keys for full functionality.")
     
     # Check status of all environment variables

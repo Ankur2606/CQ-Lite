@@ -123,19 +123,19 @@ def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
             
             <div class="summary">
                 <h2>Summary</h2>
-                <p>Total Files: {job.get('summary', {}).get('total_files', 'N/A')}</p>
+                <p>Total Files: {job.get('total_files', 'N/A')}</p>
                 <p>Total Issues: {job.get('summary', {}).get('total_issues', 'N/A')}</p>
                 
                 <h3>Severity Distribution</h3>
                 <ul>
-                    <li>CRITICAL: {job.get('summary', {}).get('severity_distribution', {}).get('CRITICAL', {}).get('count', 0)} 
-                        ({job.get('summary', {}).get('severity_distribution', {}).get('CRITICAL', {}).get('percentage', 0)}%)</li>
-                    <li>HIGH: {job.get('summary', {}).get('severity_distribution', {}).get('HIGH', {}).get('count', 0)} 
-                        ({job.get('summary', {}).get('severity_distribution', {}).get('HIGH', {}).get('percentage', 0)}%)</li>
-                    <li>MEDIUM: {job.get('summary', {}).get('severity_distribution', {}).get('MEDIUM', {}).get('count', 0)} 
-                        ({job.get('summary', {}).get('severity_distribution', {}).get('MEDIUM', {}).get('percentage', 0)}%)</li>
-                    <li>LOW: {job.get('summary', {}).get('severity_distribution', {}).get('LOW', {}).get('count', 0)} 
-                        ({job.get('summary', {}).get('severity_distribution', {}).get('LOW', {}).get('percentage', 0)}%)</li>
+                    <li>CRITICAL: {job.get('summary', {}).get('severity_breakdown', {}).get('CRITICAL', 0)} 
+                        ({round(job.get('summary', {}).get('severity_breakdown', {}).get('CRITICAL', 0) / max(job.get('summary', {}).get('total_issues', 1), 1) * 100, 1)}%)</li>
+                    <li>HIGH: {job.get('summary', {}).get('severity_breakdown', {}).get('HIGH', 0)} 
+                        ({round(job.get('summary', {}).get('severity_breakdown', {}).get('HIGH', 0) / max(job.get('summary', {}).get('total_issues', 1), 1) * 100, 1)}%)</li>
+                    <li>MEDIUM: {job.get('summary', {}).get('severity_breakdown', {}).get('MEDIUM', 0)} 
+                        ({round(job.get('summary', {}).get('severity_breakdown', {}).get('MEDIUM', 0) / max(job.get('summary', {}).get('total_issues', 1), 1) * 100, 1)}%)</li>
+                    <li>LOW: {job.get('summary', {}).get('severity_breakdown', {}).get('LOW', 0)} 
+                        ({round(job.get('summary', {}).get('severity_breakdown', {}).get('LOW', 0) / max(job.get('summary', {}).get('total_issues', 1), 1) * 100, 1)}%)</li>
                 </ul>
             </div>
             
