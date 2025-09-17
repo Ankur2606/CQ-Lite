@@ -4,11 +4,10 @@
   
   # Output directory for Next.js static export
   publish = "frontend/out"
-  
-  # Node.js version
-  environment = { NODE_VERSION = "18" }
 
 [build.environment]
+  # Node.js version
+  NODE_VERSION = "18"
   # Frontend environment variables
   NEXT_PUBLIC_API_URL = "https://cq-lite-backend.onrender.com"
 
