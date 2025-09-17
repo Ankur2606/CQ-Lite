@@ -138,16 +138,16 @@ npm run dev
 **Traditional Analysis**:
 ```bash
 # Analyze a directory
-uv run python -m cli analyze ./src
+uv run python -m cli.agentic_cli analyze ./src
 
 # Filter by severity
-uv run python -m cli analyze ./src --severity high
+uv run python -m cli.agentic_cli analyze ./src --severity high
 
 # Get detailed resolution steps for each issue
-uv run python -m cli analyze ./src --insights
+uv run python -m cli.agentic_cli analyze ./src --insights
 
 # JSON output
-uv run python -m cli analyze ./src --format json
+uv run python -m cli.agentic_cli analyze ./src --format json
 ```
 
 **🤖 NEW: Agentic Analysis (LangGraph-powered)**:
