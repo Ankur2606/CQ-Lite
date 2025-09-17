@@ -1,0 +1,43 @@
+[build]
+  # Build command for Next.js frontend
+  command = "cd frontend && npm install && npm run build"
+  
+  # Output directory for Next.js static export
+  publish = "frontend/out"
+  
+  # Node.js version
+  environment = { NODE_VERSION = "18" }
+
+[build.environment]
+  # Frontend environment variables
+  NEXT_PUBLIC_API_URL = "https://your-backend-url.herokuapp.com"
+
+# Next.js specific settings
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Redirects for client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  conditions = {Role = ["admin"], Country = ["US"]}
+
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Cache static assets
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Functions (if you want to add serverless functions later)
+[functions]
+  directory = "netlify/functions"
