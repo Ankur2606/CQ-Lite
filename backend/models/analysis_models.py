@@ -28,6 +28,10 @@ class CodeIssue(BaseModel):
     column_number: Optional[int] = None
     code_snippet: Optional[str] = None
     suggestion: str
+    
+    def __init__(self, **data):
+        print(f"DEBUG: Creating backend CodeIssue with line_number={data.get('line_number')}, file_path={data.get('file_path')}")
+        super().__init__(**data)
     impact_score: float  # 0-10 scale
     ai_review_context: Optional[str] = None
 
