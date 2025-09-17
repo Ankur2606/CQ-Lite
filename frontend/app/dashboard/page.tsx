@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Code, ArrowLeft } from 'lucide-react'
 import { apiService, AnalysisStatus } from '../../utils/apiService'
 import JobStatus from '../../components/JobStatus'
@@ -9,6 +9,7 @@ import AnalysisResults from '../../components/AnalysisResults'
 
 export default function Dashboard() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const jobId = searchParams.get('jobId')
   const [currentView, setCurrentView] = useState<'status' | 'results'>('status')
   const [analysisResults, setAnalysisResults] = useState<AnalysisStatus | null>(null)
@@ -31,11 +32,8 @@ export default function Dashboard() {
   }
 
   const handleNewAnalysis = () => {
-    setAnalysisResults(null)
-    setError(null)
-    setCurrentView('status')
-    // Clear URL parameters
-    window.history.replaceState({}, '', '/dashboard')
+    // Navigate to home page for new analysis
+    router.push('/')
   }
 
   if (!jobId) {
