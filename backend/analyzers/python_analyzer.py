@@ -33,7 +33,6 @@ class PythonAnalyzer:
             github_file = find_github_file_by_path(github_files, file_path)
             if github_file:
                 content = github_file.get("content", "")
-                # Create a temporary file for analysis tools that require a file path
                 temp_file_path = create_temp_file_from_github_data(content, file_path)
                 analysis_file_path = temp_file_path
             else:
@@ -45,7 +44,6 @@ class PythonAnalyzer:
                     duplication_percentage=0.0
                 )
         else:
-            # Regular local file analysis
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             analysis_file_path = file_path
@@ -66,7 +64,6 @@ class PythonAnalyzer:
                 impact_score=8.0
             ))
             
-            # Return basic metrics for files with syntax errors
             metrics = FileMetrics(
                 file_path=file_path,
                 language="python",
@@ -75,7 +72,6 @@ class PythonAnalyzer:
                 duplication_percentage=0.0
             )
             
-            # Clean up temp file if created
             if temp_file_path:
                 try:
                     os.unlink(temp_file_path)
@@ -84,34 +80,27 @@ class PythonAnalyzer:
                 
             return issues, metrics
         
-        # Complexity analysis
         complexity_issues = self._analyze_complexity(tree, content, file_path)
         issues.extend(complexity_issues)
         
-        # Security analysis using bandit
         security_issues = await self._analyze_security(file_path)
         issues.extend(security_issues)
         
-        # Hardcoded secrets detection
         secrets_issues = self._analyze_hardcoded_secrets(content, file_path)
         issues.extend(secrets_issues)
         
-        # Code duplication analysis
         duplication_issues = self._analyze_duplication(tree, file_path)
         issues.extend(duplication_issues)
         
-        # Performance analysis
         performance_issues = self._analyze_performance(tree, file_path)
         issues.extend(performance_issues)
         
-        # Calculate metrics
         metrics = self._calculate_metrics(content, tree, file_path)
         
         return issues, metrics   
  
     def _generate_issue_id(self, file_path: str, line_number: int, title: str) -> str:
         """Generate a consistent, predictable ID for an issue."""
-        # Normalize title to create a stable ID
         normalized_title = ''.join(e for e in title if e.isalnum()).lower()
         return f"{os.path.basename(file_path)}-{line_number}-{normalized_title}"
 
@@ -123,7 +112,7 @@ class PythonAnalyzer:
             complexity_results = cc_visit(content)
             
             for result in complexity_results:
-                if result.complexity > 10:  # High complexity threshold
+                if result.complexity > 10: 
                     severity = IssueSeverity.HIGH if result.complexity > 15 else IssueSeverity.MEDIUM
                     title = f"High Complexity in {result.name}"
                     
@@ -149,7 +138,7 @@ class PythonAnalyzer:
         issues = []
         
         try:
-            # Run bandit on the file
+            # here Running bandit on the file
             result = subprocess.run(
                 ['bandit', '-f', 'json', file_path],
                 capture_output=True,
@@ -188,7 +177,6 @@ class PythonAnalyzer:
         """Analyze code duplication"""
         issues = []
         
-        # Simple duplication detection based on function signatures
         functions = []
         
         for node in ast.walk(tree):
@@ -201,7 +189,6 @@ class PythonAnalyzer:
                 }
                 functions.append(func_info)
         
-        # Check for similar functions
         for i, func1 in enumerate(functions):
             for func2 in functions[i+1:]:
                 if func1['body_hash'] == func2['body_hash'] and func1['name'] != func2['name']:
@@ -225,10 +212,9 @@ class PythonAnalyzer:
         """Analyze performance issues"""
         issues = []
         
+            # here Checking for inefficient loops and nested loops
         for node in ast.walk(tree):
-            # Check for inefficient loops
             if isinstance(node, ast.For):
-                # Look for nested loops
                 for child in ast.walk(node):
                     if isinstance(child, ast.For) and child != node:
                         title = "Nested loops detected"
@@ -264,7 +250,7 @@ class PythonAnalyzer:
             language="python",
             lines_of_code=lines_of_code,
             complexity_score=avg_complexity,
-            duplication_percentage=0.0  # Simplified for now
+            duplication_percentage=0.0 
         )    
 
     def _analyze_hardcoded_secrets(self, content: str, file_path: str) -> List[CodeIssue]:
@@ -272,7 +258,6 @@ class PythonAnalyzer:
         issues = []
         lines = content.splitlines()
         
-        # Patterns for detecting hardcoded secrets
         secret_patterns = [
             # API Keys
             (r'["\']?API_?KEY["\']?\s*=\s*["\'][^"\']{20,}["\']', 'API Key', 'critical'),
@@ -298,14 +283,14 @@ class PythonAnalyzer:
         for i, line in enumerate(lines, 1):
             line_stripped = line.strip()
             
-            # Skip comments and empty lines
+            
             if line_stripped.startswith('#') or not line_stripped:
                 continue
             
             for pattern, secret_type, severity in secret_patterns:
                 import re
                 if re.search(pattern, line, re.IGNORECASE):
-                    # Additional validation to reduce false positives
+                  
                     if self._is_likely_secret(line, secret_type):
                         severity_enum = {
                             'critical': IssueSeverity.CRITICAL,
@@ -333,7 +318,6 @@ class PythonAnalyzer:
         """Additional validation to reduce false positives"""
         line_lower = line.lower()
         
-        # Skip obvious test/example values
         test_indicators = [
             'test', 'example', 'dummy', 'fake', 'mock', 'sample',
             'your_key_here', 'replace_me', 'todo', 'fixme',
@@ -344,11 +328,9 @@ class PythonAnalyzer:
             if indicator in line_lower:
                 return False
         
-        # Skip if it's clearly a variable assignment to os.getenv or similar
         if 'os.getenv' in line or 'environ' in line:
             return False
         
-        # Skip if it's in a comment explaining what to do
         if line.strip().startswith('#'):
             return False
         

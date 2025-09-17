@@ -8,7 +8,7 @@ from chromadb.api.types import Documents, EmbeddingFunction
 
 load_dotenv()
 
-# --- Custom Embedding Function Wrapper ---
+
 class CustomEmbeddingFunction(EmbeddingFunction):
     """A custom wrapper to make a direct OpenAI client compatible with ChromaDB."""
     def __init__(self, client: OpenAI, model_name: str = "Qwen/Qwen3-Embedding-8B"):
@@ -20,13 +20,10 @@ class CustomEmbeddingFunction(EmbeddingFunction):
         response = self._client.embeddings.create(model=self._model_name, input=input)
         return [item.embedding for item in response.data]
 
-# --- Constants ---
-# Use a persistent directory for the ChromaDB instance
-# Path is defined but directory is only created when needed
+
 CHROMA_DB_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "db", "chroma_db")
 COLLECTION_NAME = "codebase_collection"
 
-# Function to ensure directory exists only when needed
 def ensure_chroma_directory_exists():
     """Create the ChromaDB directory if it doesn't exist"""
     os.makedirs(CHROMA_DB_PATH, exist_ok=True)
@@ -47,7 +44,6 @@ def get_embedding_model() -> CustomEmbeddingFunction:
     # Return the custom function wrapper
     return CustomEmbeddingFunction(client)
 
-# --- ChromaDB Client ---
 def get_chroma_client():
     """Initializes and returns a persistent ChromaDB client."""
     ensure_chroma_directory_exists()
