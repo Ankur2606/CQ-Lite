@@ -13,6 +13,7 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
   const [dragActive, setDragActive] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [maxFiles, setMaxFiles] = useState(12)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleDrag = (e: React.DragEvent) => {
@@ -39,8 +40,8 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
     const fileArray = Array.from(files)
     
     // Check if adding these files would exceed the limit
-    if (selectedFiles.length + fileArray.length > 12) {
-      onError(`Maximum 12 files allowed. You currently have ${selectedFiles.length} files selected.`)
+    if (selectedFiles.length + fileArray.length > maxFiles) {
+      onError(`Maximum ${maxFiles} files allowed. You currently have ${selectedFiles.length} files selected.`)
       return
     }
     
@@ -65,7 +66,7 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
 
     setIsLoading(true)
     try {
-      const response = await apiService.uploadFiles(selectedFiles)
+      const response = await apiService.uploadFiles(selectedFiles, maxFiles)
       onAnalysisStart(response.job_id)
     } catch (error: any) {
       onError(error.response?.data?.detail || 'Failed to upload files')
@@ -89,10 +90,25 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
         <h2 className="text-2xl font-bold gradient-text">File Upload Analysis</h2>
       </div>
 
+      {/* Settings */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-300 mb-2">
+          Maximum Files to Analyze
+        </label>
+        <input
+          type="number"
+          min="1"
+          max="50"
+          value={maxFiles}
+          onChange={(e) => setMaxFiles(Number(e.target.value))}
+          className="w-32 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-neon-blue"
+        />
+      </div>
+
       {/* Upload Area */}
       <div
         className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-300 mb-6 ${
-          selectedFiles.length >= 12
+          selectedFiles.length >= maxFiles
             ? 'border-gray-600 bg-gray-800/50 cursor-not-allowed'
             : dragActive
             ? 'border-neon-blue bg-neon-blue/10 scale-105'
@@ -105,25 +121,25 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
       >
         <Upload className="h-16 w-16 text-neon-blue mx-auto mb-4" />
         <h3 className="text-xl font-semibold mb-2">Drop your files here</h3>
-        <p className="text-gray-400 mb-4">Select up to 12 files total for analysis</p>
+        <p className="text-gray-400 mb-4">Select up to {maxFiles} files total for analysis</p>
         <button
           type="button"
           onClick={() => fileInputRef.current?.click()}
-          disabled={selectedFiles.length >= 12}
+          disabled={selectedFiles.length >= maxFiles}
           className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ${
-            selectedFiles.length >= 12
+            selectedFiles.length >= maxFiles
               ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
               : 'bg-gradient-to-r from-neon-blue to-neon-purple text-white hover:shadow-lg'
           }`}
         >
-          {selectedFiles.length >= 12 ? 'File Limit Reached' : 'Choose Files'}
+          {selectedFiles.length >= maxFiles ? 'File Limit Reached' : 'Choose Files'}
         </button>
         <input
           ref={fileInputRef}
           type="file"
           multiple
           onChange={handleFileSelect}
-          disabled={selectedFiles.length >= 12}
+          disabled={selectedFiles.length >= maxFiles}
           className="hidden"
           accept=".py,.js,.ts,.jsx,.tsx,.java,.cpp,.go,.rb,.php,.cs,.html,.css,.json,.yml,.yaml,.md,.txt"
         />
@@ -132,14 +148,14 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
       {/* File Limit Info */}
       <div className="text-center mb-4">
         <p className="text-xs text-gray-500">
-          Maximum 12 files allowed for upload and analysis
+          Maximum {maxFiles} files allowed for upload and analysis
         </p>
       </div>
 
       {/* Selected Files */}
       {selectedFiles.length > 0 && (
         <div className="mb-6">
-          <h4 className="text-lg font-semibold mb-4">Selected Files ({selectedFiles.length}/12)</h4>
+          <h4 className="text-lg font-semibold mb-4">Selected Files ({selectedFiles.length}/{maxFiles})</h4>
           <div className="space-y-2 max-h-60 overflow-y-auto">
             {selectedFiles.map((file, index) => (
               <div key={index} className="flex items-center justify-between bg-white/5 rounded-lg p-3">

@@ -12,7 +12,7 @@ import os
 import sys
 from pathlib import Path
 
-# Add the parent directory to the path for imports
+
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from api.models.api_models import GitHubAnalysisRequest, AnalysisResponse, AnalysisJobStatus
@@ -34,10 +34,10 @@ async def analyze_github_repo(
     """
     Analyze a GitHub repository for code quality issues and generate dependency graphs
     """
-    # Generate a job ID
+    
     job_id = str(uuid.uuid4())
     
-    # Create initial job status
+
     job_store.add_job(job_id, {
         "job_id": job_id,
         "status": AnalysisJobStatus.PENDING,

@@ -110,11 +110,14 @@ class ApiService {
   }
 
   // File Upload Analysis
-  async uploadFiles(files: File[]): Promise<AnalysisResponse> {
+  async uploadFiles(files: File[], maxFiles: number = 12): Promise<AnalysisResponse> {
     const formData = new FormData();
     files.forEach(file => {
       formData.append('files', file);
     });
+    
+    // Add max_files parameter to the form data
+    formData.append('max_files', maxFiles.toString());
 
     const response = await this.axiosInstance.post('/api/analyze/upload', formData, {
       headers: {

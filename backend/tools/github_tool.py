@@ -7,7 +7,7 @@ import os
 import re
 import base64
 import requests
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from urllib.parse import urlparse
 from dotenv import load_dotenv
 
@@ -178,7 +178,7 @@ def fetch_file_content(file_url: str, token: Optional[str] = None) -> str:
         raise GitHubAPIException(f"Unsupported encoding: {data.get('encoding')}")
 
 def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Optional[str] = None, 
-                              max_files: int = 100, current_count: int = 0) -> List[Dict[str, Any]]:
+                              max_files: int = 100, current_count: int = 0) -> Tuple[List[Dict[str, Any]], int]:
     """
     Recursively fetch files from a GitHub repository.
     
@@ -191,14 +191,14 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
         current_count: Current file count
         
     Returns:
-        List of dictionaries with file information
+        Tuple of (list of dictionaries with file information, updated file count)
     """
     results = []
     
     # Stop if we've reached the maximum number of files
     if current_count >= max_files:
         print(f"Reached maximum file count ({max_files})")
-        return results
+        return results, current_count
     
     try:
         contents = fetch_repo_contents(owner, repo, path, token)
@@ -223,13 +223,16 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
                 
             if item_type == "dir":
                 # Recursively process directories
-                sub_results = fetch_repo_files_recursive(
+                sub_results, current_count = fetch_repo_files_recursive(
                     owner, repo, item_path, token, max_files, current_count
                 )
                 results.extend(sub_results)
-                current_count += len(sub_results)
                 
             elif item_type == "file" and is_code_file(item_path) and is_size_acceptable(item_size):
+                # Check again if we've reached the limit before processing the file
+                if current_count >= max_files:
+                    break
+                    
                 try:
                     content = fetch_file_content(item.get("url", ""), token)
                     
@@ -260,7 +263,7 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
     except Exception as e:
         print(f"Unexpected error processing directory {path}: {e}")
         
-    return results
+    return results, current_count
 
 def fetch_repo_files(repo_url: str, token: Optional[str] = None, max_files: int = 100) -> List[Dict[str, Any]]:
     """
@@ -296,4 +299,6 @@ def fetch_repo_files(repo_url: str, token: Optional[str] = None, max_files: int 
     print(f"Repository: {owner}/{repo}")
     
     # Fetch repository files recursively
-    return fetch_repo_files_recursive(owner, repo, "", token, max_files)
+    files, final_count = fetch_repo_files_recursive(owner, repo, "", token, max_files)
+    print(f"Successfully fetched {final_count} files from repository")
+    return files
