@@ -9,18 +9,32 @@ def process_github_files(github_files: List[Dict]) -> Dict[str, List[str]]:
     """Process GitHub repository files and categorize by language"""
     discovered_files = {"python": [], "javascript": [], "docker": []}
     
+    print(f"🔍 Processing {len(github_files)} GitHub files...")
+    
     for file in github_files:
         file_path = file.get("file_path", "")
         filename = file_path.lower()
         # Use Path to extract extension, but keep original path as string
         ext = Path(file_path).suffix.lower()
         
+        print(f"📄 Processing file: {file_path} (ext: {ext})")
+        
         if ext == '.py':
             discovered_files["python"].append(file_path)
+            print(f"✅ Added Python file: {file_path}")
         elif ext in ['.js', '.ts', '.jsx', '.tsx']:
             discovered_files["javascript"].append(file_path)
+            print(f"✅ Added JavaScript file: {file_path}")
         elif ext == '.dockerfile' or filename.endswith('dockerfile') or '/dockerfile' in filename or '\\dockerfile' in filename:
             discovered_files["docker"].append(file_path)
+            print(f"✅ Added Docker file: {file_path}")
+        else:
+            print(f"⏭️ Skipping file: {file_path}")
+    
+    print(f"📊 Discovery results:")
+    print(f"   Python files: {len(discovered_files['python'])}")
+    print(f"   JavaScript files: {len(discovered_files['javascript'])}")
+    print(f"   Docker files: {len(discovered_files['docker'])}")
     
     return discovered_files
 

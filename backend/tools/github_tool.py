@@ -201,11 +201,20 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
         return results, current_count
     
     try:
+        print(f"📁 Exploring directory: {path if path else 'root'}")
         contents = fetch_repo_contents(owner, repo, path, token)
         
         # Handle both single item and list responses
         if not isinstance(contents, list):
             contents = [contents]
+        
+        # Sort contents to prioritize Python files and common directories
+        contents.sort(key=lambda x: (
+            x.get("type") != "dir",  # Directories first
+            x.get("name", "").lower() not in ["src", "lib", "portia", "app"],  # Common source dirs first
+            not x.get("path", "").endswith(".py"),  # Python files first within files
+            x.get("name", "").lower()
+        ))
         
         for item in contents:
             # Stop if we've reached the maximum number of files
@@ -222,6 +231,7 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
                 continue
                 
             if item_type == "dir":
+                print(f"📂 Entering directory: {item_path}")
                 # Recursively process directories
                 sub_results, current_count = fetch_repo_files_recursive(
                     owner, repo, item_path, token, max_files, current_count
@@ -245,7 +255,7 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
                         "url": item.get("html_url", "")
                     })
                     current_count += 1
-                    print(f"Fetched file {current_count}/{max_files}: {item_path}")
+                    print(f"✅ Fetched file {current_count}/{max_files}: {item_path}")
                     
                 except GitHubAPIException as e:
                     print(f"Error fetching file {item_path}: {e}")
@@ -254,9 +264,9 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
             else:
                 # Skip non-code files or files that are too large
                 if not is_code_file(item_path):
-                    print(f"Skipping non-code file: {item_path}")
+                    print(f"⏭️ Skipping non-code file: {item_path}")
                 elif not is_size_acceptable(item_size):
-                    print(f"Skipping large file ({item_size/1024/1024:.2f} MB): {item_path}")
+                    print(f"⏭️ Skipping large file ({item_size/1024/1024:.2f} MB): {item_path}")
                     
     except GitHubAPIException as e:
         print(f"Error fetching directory {path}: {e}")

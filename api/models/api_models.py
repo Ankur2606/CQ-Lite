@@ -37,7 +37,7 @@ class UploadAnalysisRequest(BaseModel):
     """Request model for uploaded files analysis"""
     service: ServiceType = Field(default=ServiceType.GEMINI, description="AI service to use")
     include_notion: bool = Field(default=False, description="Whether to push results to Notion")
-    max_files: int = Field(default=12, description="Maximum number of files to analyze")
+    max_files: int = Field(default=100, description="Maximum number of files to analyze")
 
 
 class ReportRequest(BaseModel):
