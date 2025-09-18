@@ -142,6 +142,7 @@ def analyze(path, repourl, format, severity, insights, model, quick, notion, max
             model_choice=model,  # Pass model choice to the state
             skip_vector_store=quick,
             chat_mode=False,
+            max_files_limit=max_files,  # Add max_files limit to state
             discovered_files={},
             file_analysis_complete={},
             all_issues=[],
@@ -343,6 +344,7 @@ def chat(context, notion):
                 model_choice="gemini",
                 skip_vector_store=False,
                 chat_mode=True,
+                max_files_limit=100,  # Default limit for chat mode
                 discovered_files={},
                 file_analysis_complete={},
                 all_issues=[],

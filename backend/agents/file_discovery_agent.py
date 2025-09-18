@@ -1,17 +1,26 @@
 import os
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 from backend.services.llm_service import get_llm_model
 from .state_schema import CodeAnalysisState
 
-def process_github_files(github_files: List[Dict]) -> Dict[str, List[str]]:
+def process_github_files(github_files: List[Dict], max_files: Optional[int] = None) -> Dict[str, List[str]]:
     """Process GitHub repository files and categorize by language"""
     discovered_files = {"python": [], "javascript": [], "docker": []}
     
     print(f"🔍 Processing {len(github_files)} GitHub files...")
+    if max_files:
+        print(f"📊 Max files limit: {max_files}")
+    
+    files_processed = 0
     
     for file in github_files:
+        # Check if we've reached the max files limit
+        if max_files and files_processed >= max_files:
+            print(f"🚫 Reached max files limit ({max_files}), stopping processing")
+            break
+            
         file_path = file.get("file_path", "")
         filename = file_path.lower()
         # Use Path to extract extension, but keep original path as string
@@ -22,12 +31,15 @@ def process_github_files(github_files: List[Dict]) -> Dict[str, List[str]]:
         if ext == '.py':
             discovered_files["python"].append(file_path)
             print(f"✅ Added Python file: {file_path}")
+            files_processed += 1
         elif ext in ['.js', '.ts', '.jsx', '.tsx']:
             discovered_files["javascript"].append(file_path)
             print(f"✅ Added JavaScript file: {file_path}")
+            files_processed += 1
         elif ext == '.dockerfile' or filename.endswith('dockerfile') or '/dockerfile' in filename or '\\dockerfile' in filename:
             discovered_files["docker"].append(file_path)
             print(f"✅ Added Docker file: {file_path}")
+            files_processed += 1
         else:
             print(f"⏭️ Skipping file: {file_path}")
     
@@ -35,6 +47,7 @@ def process_github_files(github_files: List[Dict]) -> Dict[str, List[str]]:
     print(f"   Python files: {len(discovered_files['python'])}")
     print(f"   JavaScript files: {len(discovered_files['javascript'])}")
     print(f"   Docker files: {len(discovered_files['docker'])}")
+    print(f"   Total processed: {files_processed}")
     
     return discovered_files
 
@@ -130,6 +143,7 @@ def file_discovery_agent(state: CodeAnalysisState) -> CodeAnalysisState:
     # If analysis was triggered from chat, use detected parameters
     target_path = state.get("detected_analysis_path") or state["target_path"]
     model_choice = state.get("detected_model_choice") or state.get("model_choice", "gemini")
+    max_files_limit = state.get("max_files_limit")
     
     # Check if we're analyzing a GitHub repository
     is_github_repo = state.get("is_github_repo", False)
@@ -137,7 +151,7 @@ def file_discovery_agent(state: CodeAnalysisState) -> CodeAnalysisState:
     
     if is_github_repo:
         print(f"🔍 Processing GitHub repository with {len(github_files)} files (model: {model_choice})")
-        discovered_files = process_github_files(github_files)
+        discovered_files = process_github_files(github_files, max_files_limit)
     else:
         print(f"🔍 Discovering files in: {target_path} (model: {model_choice})")
         # Discover files using existing logic for local files
@@ -145,6 +159,18 @@ def file_discovery_agent(state: CodeAnalysisState) -> CodeAnalysisState:
             target_path, 
             state["include_patterns"]
         )
+        
+        # Apply max_files limit to local file discovery as well
+        if max_files_limit:
+            total_files = sum(len(files) for files in discovered_files.values())
+            if total_files > max_files_limit:
+                print(f"🚫 Limiting analysis to {max_files_limit} files (found {total_files})")
+                # Truncate each language's file list proportionally
+                for lang in discovered_files:
+                    if discovered_files[lang]:
+                        current_len = len(discovered_files[lang])
+                        new_len = min(current_len, max_files_limit // len([k for k, v in discovered_files.items() if v]))
+                        discovered_files[lang] = discovered_files[lang][:new_len]
     
     # Get the selected model from the state
     llm_model = get_llm_model(model_choice)

@@ -110,7 +110,8 @@ async def process_github_analysis(
         analysis_result = await analysis_service.analyze_path(
             temp_dir, 
             include_patterns=request.include_patterns,
-            service=request.service
+            service=request.service,
+            max_files=request.max_files
         )
         
         # Generate dependency graph

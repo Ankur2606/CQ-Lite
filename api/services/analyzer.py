@@ -28,7 +28,8 @@ class AnalysisService:
         self,
         path: str,
         include_patterns: List[str] = ["*.py", "*.js", "*.ts", "*.jsx", "*.tsx", "Dockerfile"],
-        service: ServiceType = ServiceType.GEMINI
+        service: ServiceType = ServiceType.GEMINI,
+        max_files: int = 100
     ) -> AnalysisResult:
         """
         Analyze code at the given path using the agentic workflow
@@ -54,6 +55,7 @@ class AnalysisService:
             path: Path to the code to analyze
             include_patterns: File patterns to include
             service: AI service to use (gemini or nebius)
+            max_files: Maximum number of files to analyze
             
         Returns:
             Analysis results
@@ -67,6 +69,7 @@ class AnalysisService:
             model_choice=service.value,
             skip_vector_store=True,  # Skip vector store for server API to improve performance
             chat_mode=False,
+            max_files_limit=max_files,  # Add max_files limit to state
             discovered_files={},
             file_analysis_complete={},
             all_issues=[],

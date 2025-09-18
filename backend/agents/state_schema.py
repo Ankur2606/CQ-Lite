@@ -12,6 +12,7 @@ class CodeAnalysisState(TypedDict):
     model_choice: Literal['gemini', 'nebius']
     skip_vector_store: bool
     chat_mode: bool
+    max_files_limit: Optional[int]  # Maximum number of files to analyze
     
     # GitHub Repository Support
     github_files: List[Dict]  # List of files from GitHub API
