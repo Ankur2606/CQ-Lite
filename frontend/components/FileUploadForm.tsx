@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Upload, FileText, X, CheckCircle } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Upload, FileText, X, CheckCircle, RefreshCw } from 'lucide-react'
 import { apiService } from '../utils/apiService'
 
 interface FileUploadFormProps {
@@ -14,7 +14,14 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [maxFiles, setMaxFiles] = useState(12)
+  const [showWakeUpMessage, setShowWakeUpMessage] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
+  const [errorToast, setErrorToast] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const MAX_RETRIES = 3
+  const RETRY_INTERVAL = 15000 // 15 seconds
+  const REQUEST_TIMEOUT = 60000 // 60 seconds
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -65,15 +72,59 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
     }
 
     setIsLoading(true)
+    setShowWakeUpMessage(false)
+    setRetryCount(0)
+    setErrorToast(null)
+
+    await attemptAnalysis()
+  }
+
+  const attemptAnalysis = async (isRetry = false) => {
     try {
       const response = await apiService.uploadFiles(selectedFiles, maxFiles)
-      onAnalysisStart(response.job_id)
-    } catch (error: any) {
-      onError(error.response?.data?.detail || 'Failed to upload files')
-    } finally {
+
+      // Success! Redirect to dashboard
       setIsLoading(false)
+      setShowWakeUpMessage(false)
+      onAnalysisStart(response.job_id)
+
+    } catch (error: any) {
+      const newRetryCount = retryCount + 1
+      setRetryCount(newRetryCount)
+
+      if (newRetryCount < MAX_RETRIES) {
+        // Show wake-up message on first timeout
+        if (!isRetry) {
+          setShowWakeUpMessage(true)
+        }
+
+        // Retry after interval
+        setTimeout(() => {
+          attemptAnalysis(true)
+        }, RETRY_INTERVAL)
+      } else {
+        // All retries failed
+        setIsLoading(false)
+        setShowWakeUpMessage(false)
+        setErrorToast('Hmm, still sleepy. Try refreshing the page and starting again.')
+      }
     }
   }
+
+  const handleRetry = () => {
+    setErrorToast(null)
+    setIsLoading(false)
+    setShowWakeUpMessage(false)
+    setRetryCount(0)
+  }
+
+  // Clear error toast after 5 seconds
+  useEffect(() => {
+    if (errorToast) {
+      const timer = setTimeout(() => setErrorToast(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [errorToast])
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes'
@@ -84,7 +135,56 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
   }
 
   return (
-    <div className="glass rounded-2xl p-8">
+    <div className="relative">
+      {/* Persistent Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            {/* Orbital Loading Animation */}
+            <div className="relative w-20 h-20 mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-400 border-r-blue-300 animate-spin"></div>
+              <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-blue-300 border-r-blue-200 animate-spin animation-delay-150"></div>
+              <div className="absolute inset-4 rounded-full border-4 border-transparent border-t-blue-200 animate-spin animation-delay-300"></div>
+            </div>
+            <p className="text-white text-lg font-medium">Starting Analysis...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Wake-up Message Overlay */}
+      {showWakeUpMessage && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[100] wake-up-message">
+          <div className="bg-gradient-to-r from-blue-900/95 to-slate-900/95 border border-blue-500/30 rounded-xl p-6 shadow-2xl max-w-md">
+            <div className="text-center">
+              <div className="text-4xl mb-3 animate-pulse">😊</div>
+              <p className="text-blue-100 text-base leading-relaxed gentle-pulse">
+                The backend is hosted on Render and may take a moment to wake up.
+                <span className="italic font-medium">Thank you for your patience!</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {errorToast && (
+        <div className="fixed top-6 right-6 z-50">
+          <div className="bg-red-900/90 backdrop-blur-md border border-red-500/30 rounded-lg p-4 shadow-2xl max-w-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-red-100 text-sm">{errorToast}</p>
+              <button
+                onClick={handleRetry}
+                className="ml-4 bg-red-700 hover:bg-red-600 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="glass rounded-2xl p-8">
       <div className="flex items-center space-x-3 mb-6">
         <Upload className="h-8 w-8 text-white" />
         <h2 className="text-2xl font-bold gradient-text">File Upload Analysis</h2>
@@ -198,6 +298,7 @@ export default function FileUploadForm({ onAnalysisStart, onError }: FileUploadF
           )}
         </button>
       )}
+    </div>
     </div>
   )
 }

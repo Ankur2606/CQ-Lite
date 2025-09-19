@@ -14,6 +14,8 @@ export default function JobStatus({ jobId, onComplete, onError }: JobStatusProps
   const [status, setStatus] = useState<AnalysisStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [fakeProgress, setFakeProgress] = useState(0)
+  const [currentMessage, setCurrentMessage] = useState('Initializing analysis...')
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout
@@ -50,6 +52,38 @@ export default function JobStatus({ jobId, onComplete, onError }: JobStatusProps
     }
   }, [jobId, onComplete, onError])
 
+  // Fake progress animation
+  useEffect(() => {
+    if (status?.status === 'processing' && (!status.progress || status.progress === 0)) {
+      const progressInterval = setInterval(() => {
+        setFakeProgress(prev => {
+          const newProgress = Math.min(prev + Math.random() * 3 + 1, 95) // Max 95% for fake progress
+          
+          // Update messages based on progress
+          if (newProgress < 15) {
+            setCurrentMessage('🔍 Scanning your codebase for secrets and vulnerabilities...')
+          } else if (newProgress < 30) {
+            setCurrentMessage('🤖 Waking up our AI analysis bots on minimum wage... 💸')
+          } else if (newProgress < 45) {
+            setCurrentMessage('📊 Analyzing code complexity and performance bottlenecks...')
+          } else if (newProgress < 60) {
+            setCurrentMessage('🎯 Finding security issues and code smells...')
+          } else if (newProgress < 75) {
+            setCurrentMessage('💡 Generating smart recommendations and fixes...')
+          } else if (newProgress < 90) {
+            setCurrentMessage('📝 Making our intern bot write documentation... 📚')
+          } else {
+            setCurrentMessage('� Almost done! Polishing the final report...')
+          }
+          
+          return newProgress
+        })
+      }, 800 + Math.random() * 1200) // Random interval between 800-2000ms
+
+      return () => clearInterval(progressInterval)
+    }
+  }, [status?.status, status?.progress])
+
   const getStatusIcon = () => {
     switch (status?.status) {
       case 'pending':
@@ -85,7 +119,7 @@ export default function JobStatus({ jobId, onComplete, onError }: JobStatusProps
       case 'pending':
         return 'Analysis queued and waiting to start...'
       case 'processing':
-        return 'Analyzing your code for quality issues...'
+        return 'Analyzing your codebase with AI-powered insights! 🚀'
       case 'completed':
         return 'Analysis completed successfully!'
       case 'failed':
@@ -99,8 +133,8 @@ export default function JobStatus({ jobId, onComplete, onError }: JobStatusProps
     return (
       <div className="glass rounded-xl p-8 text-center">
         <Loader className="h-16 w-16 text-neon-blue mx-auto mb-4 animate-spin" />
-        <h3 className="text-2xl font-semibold mb-2">Initializing Analysis</h3>
-        <p className="text-gray-400">Setting up your analysis job...</p>
+        <h3 className="text-2xl font-semibold mb-2">🚀 Firing up the Analysis Engines</h3>
+        <p className="text-gray-400">Getting our AI bots ready to analyze your code...</p>
       </div>
     )
   }
@@ -138,22 +172,20 @@ export default function JobStatus({ jobId, onComplete, onError }: JobStatusProps
             <div className="flex justify-between items-center mb-2">
               <span className="text-gray-300">Progress</span>
               <span className="text-white font-semibold">
-                {status.progress || 0}%
+                {Math.round(status.progress || fakeProgress)}%
               </span>
             </div>
             <div className="w-full bg-gray-700 rounded-full h-2">
               <div
                 className="bg-gradient-to-r from-neon-blue to-neon-purple h-2 rounded-full transition-all duration-500"
-                style={{ width: `${status.progress || 0}%` }}
+                style={{ width: `${status.progress || fakeProgress}%` }}
               />
             </div>
           </div>
 
-          {status.message && (
-            <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
-              <p className="text-blue-200 text-sm">{status.message}</p>
-            </div>
-          )}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
+            <p className="text-blue-200 text-sm">{currentMessage}</p>
+          </div>
         </div>
       )}
 
