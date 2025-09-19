@@ -89,11 +89,11 @@ def print_env_var_help(missing_vars: List[str], feature_name: Optional[str] = No
     
     print("\nPlease set the following environment variables:\n")
     
-    # Get shell type
+
     shell = os.environ.get("SHELL", "").lower()
     is_windows = sys.platform.startswith("win")
     
-    # Determine export command based on shell
+
     if is_windows:
         export_cmd = "$env:"  # PowerShell
         example = 'In PowerShell: $env:GOOGLE_API_KEY="your-api-key-here"'
@@ -101,7 +101,7 @@ def print_env_var_help(missing_vars: List[str], feature_name: Optional[str] = No
         export_cmd = "export "  # Bash/Zsh
         example = 'In Bash/Zsh: export GOOGLE_API_KEY="your-api-key-here"'
     
-    # Print instructions for each missing variable
+
     for var in missing_vars:
         info = REQUIRED_ENV_VARS.get(var, {"purpose": "Required for operation"})
         print(f"  {var}:")
@@ -111,7 +111,7 @@ def print_env_var_help(missing_vars: List[str], feature_name: Optional[str] = No
             print(f"    More info: {info['guide_url']}")
         print("")
     
-    # Print example for .env file
+
     print("Or add to your .env file in the project root:\n")
     for var in missing_vars:
         print(f"{var}=your-{var.lower()}-here")

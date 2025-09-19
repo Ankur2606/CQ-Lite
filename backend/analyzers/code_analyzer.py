@@ -38,11 +38,11 @@ class CodeAnalyzer:
                 print(f"Error analyzing {file_path}: {e}")
                 continue
         
-        # Generate AI insights if requested
+    
         if generate_insights and all_issues:
             all_issues = await self._generate_ai_insights(all_issues)
         
-        # Generate summary
+    
         summary = self._generate_summary(all_issues, all_metrics)
         
         analysis_duration = time.time() - start_time
@@ -78,7 +78,7 @@ class CodeAnalyzer:
         elif file_ext in ['.js', '.ts', '.jsx', '.tsx']:
             return await self.js_analyzer.analyze(file_path)
         else:
-            # Basic analysis for unsupported files
+        
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()
                 lines = len(content.splitlines())
@@ -119,14 +119,14 @@ class CodeAnalyzer:
             from ..services.gemini_service import GeminiService
             gemini_service = GeminiService()
             
-            # Process issues in batches to avoid overwhelming the AI
+        
             batch_size = 5
             updated_issues = []
             
             for i in range(0, len(issues), batch_size):
                 batch = issues[i:i + batch_size]
                 
-                # Create a prompt for the batch of issues
+            
                 issues_context = []
                 for idx, issue in enumerate(batch):
                     issues_context.append(f"""
@@ -166,11 +166,11 @@ class CodeAnalyzer:
                 try:
                     response = await gemini_service.chat(prompt)
                     
-                    # Parse AI response and update issues
+                
                     import json
                     import re
                     
-                    # Extract JSON from response
+                
                     json_match = re.search(r'\{.*\}', response.message, re.DOTALL)
                     if json_match:
                         ai_insights = json.loads(json_match.group())
@@ -180,13 +180,13 @@ class CodeAnalyzer:
                             if issue_idx < len(batch):
                                 issue = batch[issue_idx]
                                 
-                                # Create enhanced suggestion with AI insights
+                            
                                 enhanced_suggestion = self._format_ai_insight(insight)
                                 issue.suggestion = enhanced_suggestion
                     
                 except Exception as e:
                         print(f"Error generating AI insights for batch: {e}")
-                        # Keep original suggestions if AI fails
+                    
                         pass
                 
                 updated_issues.extend(batch)
@@ -201,16 +201,16 @@ class CodeAnalyzer:
         """Format AI insight into a concise, readable suggestion"""
         formatted = []
         
-        # Quick fix
+    
         if 'quick_fix' in insight:
             formatted.append(f"🔧 Fix: {insight['quick_fix']}")
         
-        # Code example (concise)
+    
         if 'code_before' in insight and 'code_after' in insight:
             formatted.append(f"📝 Before: {insight['code_before']}")
             formatted.append(f"   After:  {insight['code_after']}")
         
-        # Why it matters
+    
         if 'why_important' in insight:
             formatted.append(f"⚠️  Why: {insight['why_important']}")
         

@@ -18,7 +18,7 @@ class GeminiModel:
     def __init__(self):
         api_key = os.getenv('GOOGLE_API_KEY')
         if not api_key:
-            # This will be handled by the get_gemini_model function
+        
             raise ValueError("GOOGLE_API_KEY environment variable is required")
         
         genai.configure(api_key=api_key)
@@ -54,7 +54,7 @@ class GeminiService:
     async def chat(self, message: str, context: Optional[Dict[str, Any]] = None) -> ChatResponse:
         """Chat about the codebase using Gemini"""
         
-        # Build context-aware prompt
+    
         system_prompt = """You are a code quality expert assistant. You help developers understand their codebase, 
         explain code quality issues, and provide actionable suggestions for improvement.
         
@@ -66,7 +66,7 @@ class GeminiService:
         - Use developer-friendly language
         """
         
-        # Add context if available
+    
         context_info = ""
         if context:
             if 'analysis_result' in context:
@@ -85,11 +85,11 @@ class GeminiService:
         try:
             response = self.model.generate_content(full_prompt)
             
-            # Store in chat history
+        
             self.chat_history.append({"role": "user", "content": message})
             self.chat_history.append({"role": "assistant", "content": response.text})
             
-            # Generate suggestions based on the conversation
+        
             suggestions = self._generate_suggestions(message, response.text)
             
             return ChatResponse(
@@ -109,7 +109,7 @@ class GeminiService:
         """Generate follow-up suggestions based on the conversation"""
         suggestions = []
         
-        # Common follow-up questions based on message content
+    
         if "security" in user_message.lower():
             suggestions.extend([
                 "What are the most critical security issues?",

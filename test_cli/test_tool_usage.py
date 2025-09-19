@@ -18,7 +18,7 @@ def read_file_tool(file_path: str) -> str:
     """Reads the content of a file at the given path and returns it as a string."""
     print(f"--- Calling read_file_tool with: {file_path} ---")
     try:
-        # For safety, prevent reading files outside the current directory
+    
         if ".." in file_path:
             return "Error: Directory traversal is not allowed."
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -29,7 +29,7 @@ def read_file_tool(file_path: str) -> str:
 # --- 2. Set up the Agent State and Tool Executor ---
 
 class AgentState(TypedDict):
-    # The `add_messages` function is a helper for appending messages to the list
+
     messages: Annotated[list, lambda x, y: x + y]
 
 # Create a list of the tools the agent can use
@@ -42,7 +42,7 @@ tool_executor = ToolExecutor(tools)
 # Make sure your GOOGLE_API_KEY is in your .env file
 model = get_llm_model("gemini")
 if model:
-    # Bind the tools to the model, so it knows what functions it can call
+
     model_with_tools = model.model.bind_tools(tools)
 else:
     print("⚠️ Gemini model not available. Please check your GOOGLE_API_KEY.")
@@ -56,11 +56,11 @@ def agent_node(state: AgentState):
 
     response = model_with_tools.invoke(state["messages"])
     
-    # If the model wants to call a tool, the response will have tool_calls
+
     if response.tool_calls:
         return {"messages": [response]} # Pass the tool call to the next node
     else:
-        # If there's no tool call, it's a final answer
+    
         return {"messages": [response]}
 
 # This node executes the tools that the agent decided to call
@@ -90,10 +90,10 @@ def tool_node(state: AgentState):
 def should_continue(state: AgentState):
     last_message = state["messages"][-1]
     if last_message.tool_calls:
-        # If the model made a tool call, we should execute the tool
+    
         return "tools"
     else:
-        # If there are no tool calls, we're done
+    
         return END
 
 # --- 4. Build the Graph ---
@@ -130,10 +130,10 @@ if __name__ == "__main__":
         if query.lower() == "exit":
             break
         
-        # Invoke the graph with the user's message
+    
         inputs = {"messages": [HumanMessage(content=query)]}
         
-        # The `stream` method gives us real-time output as the graph runs
+    
         for output in app.stream(inputs):
             for key, value in output.items():
                 if key == "agent" and value['messages'][-1].content:

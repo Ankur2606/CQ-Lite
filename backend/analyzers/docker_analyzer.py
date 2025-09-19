@@ -38,15 +38,15 @@ class DockerAnalyzer:
             r'WORKDIR\s+\/(?!home|app|usr|opt|src)': 'Consider using a standard directory like /app, /home/app, or /usr/src/app.',
         }
         
-        # Docker best practices checklist
+    
         self.best_practices_checklist = [
             'MULTI_STAGE_BUILD',  # Check for multi-stage builds
-            'LAYER_REDUCTION',    # Check for layer reduction (combining commands with &&)
-            'DOCKERIGNORE',       # Check for .dockerignore file
-            'SPECIFIC_TAG',       # Check for specific image tags
-            'NON_ROOT_USER',      # Check for non-root user
-            'HEALTH_CHECK',       # Check for HEALTHCHECK
-            'EXPOSE_PORT',        # Check for EXPOSE directive
+            'LAYER_REDUCTION',
+            'DOCKERIGNORE',   
+            'SPECIFIC_TAG',   
+            'NON_ROOT_USER',  
+            'HEALTH_CHECK',   
+            'EXPOSE_PORT',    
             'ENTRYPOINT_OR_CMD',  # Check for ENTRYPOINT or CMD
         ]
     
@@ -63,43 +63,43 @@ class DockerAnalyzer:
         """
         issues = []
         
-        # Get file content (either from GitHub or local file)
+    
         if github_files:
             from backend.analyzers.github_helpers import find_github_file_by_path
             github_file = find_github_file_by_path(github_files, file_path)
             if github_file:
                 content = github_file.get("content", "")
             else:
-                # Fall back to local file
+            
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                     content = f.read()
         else:
-            # Read local file
+        
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read()
         
         lines = content.splitlines()
         
-        # Basic metrics
+    
         num_lines = len(lines)
         num_instructions = len(re.findall(r'^\s*(FROM|RUN|CMD|LABEL|EXPOSE|ENV|ADD|COPY|ENTRYPOINT|VOLUME|USER|WORKDIR|ARG|ONBUILD|HEALTHCHECK|SHELL)\s+', content, re.MULTILINE))
         
-        # Check for multi-stage builds
+    
         has_multi_stage_build = len(re.findall(r'^\s*FROM\s+', content, re.MULTILINE)) > 1
         
-        # Analyze security issues
+    
         security_issues = self._analyze_security(content, file_path, lines)
         issues.extend(security_issues)
         
-        # Analyze best practices
+    
         best_practice_issues = self._analyze_best_practices(content, file_path, lines)
         issues.extend(best_practice_issues)
         
-        # Analyze base image issues
+    
         base_image_issues = self._analyze_base_image(content, file_path, lines)
         issues.extend(base_image_issues)
         
-        # Calculate metrics for the Dockerfile
+    
         metrics = FileMetrics(
             file_path=file_path,
             language="docker",
@@ -114,7 +114,7 @@ class DockerAnalyzer:
         """Analyze Dockerfile for security issues."""
         issues = []
         
-        # Check for root user (no USER directive means root)
+    
         if not re.search(r'^\s*USER\s+', content, re.MULTILINE):
             issues.append(
                 CodeIssue(
@@ -131,19 +131,19 @@ class DockerAnalyzer:
                 )
             )
         
-        # Check other security patterns
+    
         for i, line in enumerate(lines, 1):
             for pattern, message in self.security_patterns.items():
                 if re.search(pattern, line, re.IGNORECASE):
                     severity = IssueSeverity.MEDIUM
                     impact = 5.0
                     
-                    # Adjust severity and impact based on the issue
+                
                     if "security risk" in message:
                         severity = IssueSeverity.HIGH
                         impact = 8.0
                     elif "good practice" in message.lower():
-                        # This is actually a positive finding
+                    
                         continue
                     
                     issues.append(
@@ -167,7 +167,7 @@ class DockerAnalyzer:
         """Analyze Dockerfile for best practice violations."""
         issues = []
         
-        # Check for layer reduction (commands joined with &&)
+    
         run_commands = re.findall(r'^\s*RUN\s+(.+)$', content, re.MULTILINE)
         if len(run_commands) > 3:  # More than 3 RUN commands might indicate too many layers
             run_with_multiple_commands = sum(1 for cmd in run_commands if "&&" in cmd)
@@ -187,7 +187,7 @@ class DockerAnalyzer:
                     )
                 )
         
-        # Check for ENTRYPOINT or CMD
+    
         if not re.search(r'^\s*(ENTRYPOINT|CMD)\s+', content, re.MULTILINE):
             issues.append(
                 CodeIssue(
@@ -204,7 +204,7 @@ class DockerAnalyzer:
                 )
             )
         
-        # Check other best practice patterns
+    
         for i, line in enumerate(lines, 1):
             for pattern, message in self.best_practice_patterns.items():
                 if re.search(pattern, line, re.IGNORECASE):
@@ -229,7 +229,7 @@ class DockerAnalyzer:
         """Analyze Dockerfile base images for issues."""
         issues = []
         
-        # Find all FROM instructions
+    
         from_lines = [(i, line) for i, line in enumerate(lines, 1) if line.strip().startswith("FROM")]
         
         if not from_lines:
@@ -249,9 +249,9 @@ class DockerAnalyzer:
             )
             return issues
         
-        # Check base image patterns
+    
         for i, line in from_lines:
-            # Check for latest tag
+        
             if ":latest" in line or not ":" in line:
                 issues.append(
                     CodeIssue(
@@ -268,7 +268,7 @@ class DockerAnalyzer:
                     )
                 )
             
-            # Check for deprecated/outdated base images
+        
             if "ubuntu:16.04" in line or "ubuntu:14.04" in line or "debian:jessie" in line or "debian:stretch" in line:
                 issues.append(
                     CodeIssue(
@@ -285,7 +285,7 @@ class DockerAnalyzer:
                     )
                 )
             
-            # Check for custom base image patterns
+        
             for pattern, message in self.base_image_patterns.items():
                 if re.search(pattern, line, re.IGNORECASE):
                     issues.append(

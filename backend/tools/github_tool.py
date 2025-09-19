@@ -20,17 +20,17 @@ GITHUB_CONTENT_API = GITHUB_API_BASE + "/repos/{owner}/{repo}/contents/{path}"
 
 # File type filters
 CODE_EXTENSIONS = {
-    # Python
+
     '.py', '.pyx', '.pyw', '.ipynb',
-    # JavaScript/TypeScript
+
     '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs',
-    # Web
+
     '.html', '.htm', '.css', '.scss', '.sass', '.less',
-    # Configuration
+
     '.json', '.yml', '.yaml', '.toml', '.ini', '.xml',
-    # Docker
+
     '.dockerfile', '.dockerignore',
-    # Other languages
+
     '.c', '.cpp', '.h', '.hpp', '.cs', '.java', '.go', '.rb', '.php',
     '.rs', '.swift', '.kt', '.md', '.rst', '.txt'
 }
@@ -52,16 +52,16 @@ def parse_github_url(repo_url: str) -> Dict[str, str]:
     Raises:
         ValueError: If the URL is not a valid GitHub repository URL
     """
-    # Clean up the URL
+
     repo_url = repo_url.strip()
     
-    # Handle different URL formats
-    # https://github.com/user/repo
-    # https://github.com/user/repo.git
-    # git@github.com:user/repo.git
+
+
+
+
     
     if repo_url.startswith("git@github.com:"):
-        # SSH URL format
+    
         path = repo_url.split("git@github.com:")[1]
         if path.endswith(".git"):
             path = path[:-4]  # Remove .git suffix
@@ -69,7 +69,7 @@ def parse_github_url(repo_url: str) -> Dict[str, str]:
         if len(parts) >= 2:
             return {"owner": parts[0], "repo": parts[1]}
     else:
-        # HTTP(S) URL format
+    
         parsed_url = urlparse(repo_url)
         if parsed_url.netloc in ("github.com", "www.github.com"):
             path_parts = parsed_url.path.strip("/").split("/")
@@ -167,7 +167,7 @@ def fetch_file_content(file_url: str, token: Optional[str] = None) -> str:
     if data.get("encoding") == "base64":
         content = base64.b64decode(data.get("content", "")).decode("utf-8")
         
-        # Check if the file has too many lines
+    
         line_count = content.count('\n') + 1
         if line_count > 500:
             print(f"Skipping large file ({line_count} lines): {data.get('path', 'unknown')}")
@@ -195,7 +195,7 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
     """
     results = []
     
-    # Stop if we've reached the maximum number of files
+
     if current_count >= max_files:
         print(f"Reached maximum file count ({max_files})")
         return results, current_count
@@ -204,11 +204,11 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
         print(f"📁 Exploring directory: {path if path else 'root'}")
         contents = fetch_repo_contents(owner, repo, path, token)
         
-        # Handle both single item and list responses
+    
         if not isinstance(contents, list):
             contents = [contents]
         
-        # Sort contents to prioritize Python files and common directories
+    
         contents.sort(key=lambda x: (
             x.get("type") != "dir",  # Directories first
             x.get("name", "").lower() not in ["src", "lib", "portia", "app"],  # Common source dirs first
@@ -217,7 +217,7 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
         ))
         
         for item in contents:
-            # Stop if we've reached the maximum number of files
+        
             if current_count >= max_files:
                 break
                 
@@ -226,27 +226,27 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
             item_name = item.get("name", "")
             item_size = item.get("size", 0)
             
-            # Skip .git directories and other common non-code paths
+        
             if item_path.startswith(".git/") or item_name in [".git", "node_modules", "__pycache__", "venv", ".venv", "env"]:
                 continue
                 
             if item_type == "dir":
                 print(f"📂 Entering directory: {item_path}")
-                # Recursively process directories
+            
                 sub_results, current_count = fetch_repo_files_recursive(
                     owner, repo, item_path, token, max_files, current_count
                 )
                 results.extend(sub_results)
                 
             elif item_type == "file" and is_code_file(item_path) and is_size_acceptable(item_size):
-                # Check again if we've reached the limit before processing the file
+            
                 if current_count >= max_files:
                     break
                     
                 try:
                     content = fetch_file_content(item.get("url", ""), token)
                     
-                    # Add file to results
+                
                     results.append({
                         "file_path": item_path,
                         "content": content,
@@ -262,7 +262,7 @@ def fetch_repo_files_recursive(owner: str, repo: str, path: str = "", token: Opt
                 except Exception as e:
                     print(f"Unexpected error processing file {item_path}: {e}")
             else:
-                # Skip non-code files or files that are too large
+            
                 if not is_code_file(item_path):
                     print(f"⏭️ Skipping non-code file: {item_path}")
                 elif not is_size_acceptable(item_size):
@@ -293,7 +293,7 @@ def fetch_repo_files(repo_url: str, token: Optional[str] = None, max_files: int 
     """
     print(f"Fetching GitHub repository: {repo_url}")
     
-    # Use environment variable if token is not provided
+
     if token is None:
         token = os.environ.get("GITHUB_API_TOKEN")
         if token:
@@ -301,14 +301,14 @@ def fetch_repo_files(repo_url: str, token: Optional[str] = None, max_files: int 
         else:
             print("No GitHub token provided. Requests may be rate-limited.")
     
-    # Parse repository URL
+
     repo_info = parse_github_url(repo_url)
     owner = repo_info["owner"]
     repo = repo_info["repo"]
     
     print(f"Repository: {owner}/{repo}")
     
-    # Fetch repository files recursively
+
     files, final_count = fetch_repo_files_recursive(owner, repo, "", token, max_files)
     print(f"Successfully fetched {final_count} files from repository")
     return files

@@ -19,10 +19,10 @@ async def test_agentic_workflow():
     print("🤖 Testing LangGraph Agentic Workflow")
     print("=" * 50)
     
-    # Create workflow
+
     workflow = create_agentic_analysis_workflow()
     
-    # Initialize state
+
     initial_state = CodeAnalysisState(
         target_path="./backend",
         include_patterns=["*.py"],
@@ -57,7 +57,7 @@ async def test_agentic_workflow():
         print(f"🔍 Issues found: {len(result.get('all_issues', []))}")
         print(f"📊 Current step: {result.get('current_step', 'unknown')}")
         
-        # Show first few issues
+    
         issues = result.get('all_issues', [])
         if issues:
             print(f"\n🚨 Sample Issues (showing first 3 of {len(issues)}):")

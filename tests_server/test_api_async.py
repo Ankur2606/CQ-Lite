@@ -164,7 +164,7 @@ class ApiTester:
         """Test the file upload endpoint"""
         self.log("\n📋 Testing file upload endpoint...")
         
-        # Create a simple test file
+    
         test_file_path = Path("test_upload.py")
         with open(test_file_path, "w") as f:
             f.write('print("Hello from test file")\n\nclass TestClass:\n    def test_method(self):\n        return "Test"')
@@ -188,7 +188,7 @@ class ApiTester:
                     file_id = resp_data['upload_id']
                     self.test_results['file_upload'] = True
                     
-                    # Test file analysis
+                
                     return await self.test_file_analysis(file_id)
                 else:
                     self.log(f"❌ File upload endpoint failed with status code {status}")
@@ -197,7 +197,7 @@ class ApiTester:
                     self.test_results['file_upload'] = False
                     return None
         finally:
-            # Clean up test file
+        
             if test_file_path.exists():
                 test_file_path.unlink()
     
@@ -248,52 +248,52 @@ class ApiTester:
         self.log("=" * 50)
         start_time = time.time()
         
-        # Setup session
+    
         await self.setup()
         
         try:
-            # Test basic endpoints
+        
             health_ok = await self.test_health()
             
             if not health_ok:
                 self.log("\n❌ Health check failed. Stopping tests.")
                 return
             
-            # Start tests in parallel
+        
             tasks = []
             
-            # GitHub analysis flow
+        
             tasks.append(self.test_github_workflow(github_repo))
             
-            # File upload flow
+        
             tasks.append(self.test_file_workflow())
             
-            # Wait for all test workflows to complete
+        
             await asyncio.gather(*tasks)
             
-            # Print summary
+        
             self.log("\n" + "=" * 50)
             self.log("🏁 API ENDPOINT TESTS COMPLETED 🏁")
             duration = time.time() - start_time
             self.log(f"Tests completed in {duration:.2f} seconds")
             
-            # Print results summary
+        
             self.log("\n📊 TEST RESULTS SUMMARY:")
             for test_name, result in self.test_results.items():
                 status_icon = "✅" if result else "❌"
                 self.log(f"{status_icon} {test_name}")
         
         finally:
-            # Cleanup
+        
             await self.teardown()
     
     async def test_github_workflow(self, github_repo: str):
         """Run the complete GitHub analysis workflow"""
         github_job_id = await self.test_github_analyze(github_repo)
         if github_job_id:
-            # Wait for the job to complete
+        
             if await self.wait_for_completion(github_job_id):
-                # Test dependent endpoints once analysis is complete
+            
                 await self.test_graph(github_job_id)
                 await self.test_report(github_job_id)
     

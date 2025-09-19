@@ -45,7 +45,7 @@ def test_github_analyze():
     """Test the GitHub repository analysis endpoint"""
     print("\n📋 Testing GitHub repository analysis endpoint...")
     
-    # Debug available routes
+
     print("DEBUG - Testing routes:")
     payload = {
         "repo_url": "https://github.com/Ankur2606/CQ-Lite",
@@ -80,11 +80,11 @@ def test_status(job_id):
         print("✅ Status endpoint is responding")
         print(f"Status: {response.json()['status']}")
         print(f"Progress: {response.json().get('progress', 'N/A')}%")
-        # Message field might not exist in the response
+    
         if 'message' in response.json():
             print(f"Message: {response.json()['message']}")
             
-        # Print any additional information that might be helpful for debugging
+    
         if response.json()['status'] == "failed":
             print(f"Error: {response.json().get('error', 'Unknown error')}")
         
@@ -108,13 +108,13 @@ def test_graph(job_id):
         print(f"Number of nodes: {len(nodes)}")
         print(f"Number of edges: {len(edges)}")
         
-        # Print sample nodes if available
+    
         if nodes:
             print("\nSample nodes:")
             for node in nodes[:5]:  # Show first 5 nodes
                 print(f"  - {node.get('id', 'unknown')}: {node.get('group', 'no group')}")
                 
-        # Print sample edges if available
+    
         if edges:
             print("\nSample edges:")
             for edge in edges[:5]:  # Show first 5 edges
@@ -124,7 +124,7 @@ def test_graph(job_id):
     else:
         print(f"❌ Graph endpoint failed with status code {response.status_code}")
         print(f"Error: {response.text}")
-        # Try to parse the error response if it's JSON
+    
         try:
             error_data = response.json()
             if 'detail' in error_data:
@@ -137,7 +137,7 @@ def test_report(job_id):
     """Test the report generation endpoint"""
     print(f"\n📋 Testing report generation endpoint for job {job_id}...")
     
-    # Test different report formats
+
     formats = ["json", "html", "md"]
     success = True
     
@@ -153,7 +153,7 @@ def test_report(job_id):
         if response.status_code == 200:
             print(f"✅ Report endpoint is responding for {fmt} format")
             
-            # For JSON format, we can check the content
+        
             if fmt == "json":
                 try:
                     json_data = response.json()
@@ -161,14 +161,14 @@ def test_report(job_id):
                 except Exception as e:
                     print(f"  - Failed to parse JSON response: {str(e)}")
             
-            # For HTML, just check that it starts with <!DOCTYPE html>
+        
             elif fmt == "html":
                 if response.text.strip().startswith("<!DOCTYPE html>"):
                     print("  - Retrieved HTML report")
                 else:
                     print("  - Response doesn't look like HTML")
                     
-            # For Markdown, check that it starts with # Code Analysis Report
+        
             elif fmt == "md":
                 if "# Code Analysis Report" in response.text:
                     print("  - Retrieved Markdown report")
@@ -186,17 +186,17 @@ def test_file_upload():
     """Test the file upload endpoint"""
     print("\n📋 Testing file upload endpoint...")
     
-    # Create a simple test file
+
     test_file_path = Path("test_upload.py")
     with open(test_file_path, "w") as f:
         f.write('print("Hello from test file")')
     
     try:
-        # Open file and specify it as a list as the API expects
+    
         with open(test_file_path, 'rb') as f:
             files = [('files', (test_file_path.name, f, 'text/plain'))]
             
-            # The correct endpoint is /api/analyze/upload
+        
             endpoint = f"{BASE_URL}/api/analyze/upload"
             print(f"Sending upload request to: {endpoint}")
             response = requests.post(endpoint, files=files)
@@ -212,10 +212,10 @@ def test_file_upload():
             print(response.text)
             return None
     finally:
-        # Clean up test file
+    
         try:
             if test_file_path.exists():
-                # Properly close file handles before attempting to delete
+            
                 import gc
                 import time
                 gc.collect()  # Force garbage collection to release file handles
@@ -223,7 +223,7 @@ def test_file_upload():
                 test_file_path.unlink()
         except Exception as e:
             print(f"Warning: Could not delete test file: {e}")
-            # If we can't delete it now, mark for deletion on exit
+        
             import atexit
             atexit.register(lambda: test_file_path.unlink(missing_ok=True))
 
@@ -231,7 +231,7 @@ def get_full_job_details(job_id):
     """Get detailed information about a job"""
     print(f"\n📊 Getting detailed job information for {job_id}...")
     
-    # First check the status to determine if we should try the graph endpoint
+
     status_response = requests.get(f"{BASE_URL}/api/status/{job_id}")
     
     results = {}
@@ -240,7 +240,7 @@ def get_full_job_details(job_id):
         results["status"] = status_data
         print(f"✅ Retrieved data from status endpoint")
         
-        # Only try to get graph data if the job completed successfully
+    
         if status_data.get("status") == "completed":
             try:
                 graph_response = requests.get(f"{BASE_URL}/api/graph/{job_id}")
@@ -255,7 +255,7 @@ def get_full_job_details(job_id):
         print(f"❌ Failed to get data from status endpoint: {status_response.status_code}")
         return None
     
-    # Print a summary of results
+
     for key, data in results.items():
         print(f"\n--- {key.upper()} RESULTS ---")
         if key == "status":
@@ -271,7 +271,7 @@ def get_full_job_details(job_id):
             edges = graph_data.get('edges', [])
             print(f"Graph has {len(nodes)} nodes and {len(edges)} edges")
             
-            # Print sample nodes if available
+        
             if nodes:
                 print("\nSample nodes:")
                 for node in nodes[:3]:  # Show first 3 nodes
@@ -284,7 +284,7 @@ def wait_for_completion(job_id, max_wait_time=60):
     print(f"\n⏳ Waiting for job {job_id} to complete...")
     start_time = time.time()
     
-    # Poll more frequently at first, then less frequently
+
     retry_count = 0
     
     while time.time() - start_time < max_wait_time:
@@ -297,7 +297,7 @@ def wait_for_completion(job_id, max_wait_time=60):
                 print("❌ Job failed")
                 return False
         
-        # Reduced waiting time for faster testing
+    
         retry_count += 1
         wait_time = min(2 + (retry_count // 3), 5)  # Start at 2s, max 5s
         time.sleep(wait_time)
@@ -309,25 +309,25 @@ def get_analysis_details(job_id):
     """Get detailed analysis results including issues and summary"""
     print(f"\n📊 Getting detailed analysis results for job {job_id}...")
     
-    # Create a custom endpoint to get all job data directly
+
     response = requests.get(f"{BASE_URL}/api/status/{job_id}")
     
     if response.status_code == 200:
         job_status = response.json()
         
-        # Check if the job failed and show the error message
+    
         if job_status.get('status') == 'failed':
             print("\n❌ Analysis job failed")
             print(f"Error: {job_status.get('error', 'Unknown error')}")
         
-        # Try to get detailed job data using direct API calls 
-        # This is just for testing - in production we would use proper endpoints
+    
+    
         try:
             detail_response = requests.get(f"{BASE_URL}/api/status/{job_id}?include_details=true")
             if detail_response.status_code == 200:
                 job_data = detail_response.json()
                 
-                # Print summary
+            
                 print("\n📝 ANALYSIS SUMMARY:")
                 print("-" * 30)
                 if "summary" in job_data:
@@ -335,7 +335,7 @@ def get_analysis_details(job_id):
                 else:
                     print("No summary available")
                 
-                # Print issues
+            
                 if "issues" in job_data and job_data["issues"]:
                     print("\n⚠️ CODE ISSUES:")
                     print("-" * 30)
@@ -359,7 +359,7 @@ def run_all_tests():
     print("🧪 STARTING API ENDPOINT TESTS 🧪")
     print("=" * 50)
     
-    # Test basic endpoints
+
     health_ok = test_health()
     root_ok = test_root()
     
@@ -367,34 +367,34 @@ def run_all_tests():
         print("\n❌ Basic endpoint tests failed. Stopping tests.")
         return False
     
-    # Test GitHub analysis flow
+
     print("\n" + "=" * 50)
     print("🔍 TESTING GITHUB ANALYSIS FLOW")
     print("=" * 50)
     github_job_id = test_github_analyze()
     if github_job_id:
-        # Wait for the job to complete
+    
         job_status = wait_for_completion(github_job_id)
-        # Always get detailed job information regardless of status
+    
         get_analysis_details(github_job_id)
         
-        # Only test graph and report endpoints if the job was completed successfully
+    
         if job_status is True:
             test_graph(github_job_id)
             test_report(github_job_id)
     
-    # Test file upload flow
+
     print("\n" + "=" * 50)
     print("📤 TESTING FILE UPLOAD FLOW")
     print("=" * 50)
     upload_job_id = test_file_upload()
     if upload_job_id:
-        # Wait for the job to complete
+    
         job_status = wait_for_completion(upload_job_id)
-        # Always get detailed job information regardless of status
+    
         get_analysis_details(upload_job_id)
         
-        # Only test graph endpoint if the job was completed successfully
+    
         if job_status is True:
             test_graph(upload_job_id)
     

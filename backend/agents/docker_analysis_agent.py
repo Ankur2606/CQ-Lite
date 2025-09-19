@@ -21,7 +21,7 @@ def read_file_content(file_path: str, github_files: List[Dict] = None, max_chars
     Returns:
         File content or error message
     """
-    # Check if we have GitHub files
+
     if github_files:
         from backend.analyzers.github_helpers import find_github_file_by_path
         github_file = find_github_file_by_path(github_files, file_path)
@@ -29,7 +29,7 @@ def read_file_content(file_path: str, github_files: List[Dict] = None, max_chars
             content = github_file.get("content", "")
             return content[:max_chars] + "..." if len(content) > max_chars else content
     
-    # Fall back to local file
+
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
@@ -59,16 +59,16 @@ async def run_docker_analysis(file_path: str, github_files: List[Dict] = None) -
 def docker_analysis_agent(state: CodeAnalysisState) -> CodeAnalysisState:
     """AI-guided Docker file analysis with dynamic tool selection"""
     
-    # Check for Dockerfiles in the discovered files
-    # We need to add docker files to the discovery system
+
+
     docker_files = []
     
-    # Look for files named 'Dockerfile' (no extension) or with .dockerfile extension
+
     all_files = []
     for file_list in state["discovered_files"].values():
         all_files.extend(file_list)
     
-    # Filter for Docker files
+
     for file_path in all_files:
         filename = file_path.lower()
         if filename.endswith('dockerfile') or '/dockerfile' in filename or '\\dockerfile' in filename or '.dockerfile' in filename:
@@ -84,26 +84,26 @@ def docker_analysis_agent(state: CodeAnalysisState) -> CodeAnalysisState:
             }
         }
     
-    # Get the selected model from the state
+
     model_choice = state.get("model_choice", "gemini")
     llm_model = get_llm_model(model_choice)
 
     docker_issues = []
     file_metadata = state.get("file_metadata", {})
     
-    # Check for GitHub files in state
+
     github_files = state.get("github_files", [])
 
     print(f"📦 Analyzing {len(docker_files)} Docker files...")
     
     for file_path in docker_files:
         print(f"📁 Analyzing: {file_path}")
-        # Traditional Analysis
+    
         import asyncio
         issues, metrics = asyncio.run(run_docker_analysis(file_path, github_files))
         print(f"   Found {len(issues)} issues in {file_path}")
         
-        # AI-Enhanced Analysis Decision Making
+    
         file_content = read_file_content(file_path, github_files)
         analysis_prompt = f"""As a Docker and container security expert, analyze this Dockerfile and provide insights:
 
@@ -149,10 +149,10 @@ Your response:"""
                 ai_decisions = llm_model.generate_content(analysis_prompt)
                 docker_issues.extend(issues)
                 
-                # Parse AI analysis and add to file metadata
+            
                 try:
                     ai_content = ai_decisions.text.strip()
-                    # Handle markdown formatting if present
+                
                     if ai_content.startswith('```json'):
                         ai_content = ai_content[7:]
                     if ai_content.startswith('```'):
@@ -161,7 +161,7 @@ Your response:"""
                         ai_content = ai_content[:-3]
                     
                     ai_content = ai_content.strip()
-                    # Find JSON boundaries
+                
                     start_idx = ai_content.find('{')
                     end_idx = ai_content.rfind('}')
                     
@@ -186,7 +186,7 @@ Your response:"""
                         "error": str(e)
                     }
             else:
-                # Fallback to original issues if AI not available
+            
                 print(f"   ⚠️ No AI model available for enhancement. Using static analysis results.")
                 docker_issues.extend(issues)
                 file_metadata[file_path] = {
@@ -194,7 +194,7 @@ Your response:"""
                     "error": "No AI model available"
                 }
         except Exception as e:
-            # Fallback to original issues if AI fails
+        
             print(f"   ❌ AI enhancement failed for {file_path}: {e}")
             docker_issues.extend(issues)
             file_metadata[file_path] = {

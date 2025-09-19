@@ -26,7 +26,7 @@ class PythonAnalyzer:
         issues = []
         temp_file_path = None
         
-        # Handle GitHub repository files
+    
         if github_files:
             from .github_helpers import find_github_file_by_path, create_temp_file_from_github_data
             
@@ -138,7 +138,7 @@ class PythonAnalyzer:
         issues = []
         
         try:
-            # here Running bandit on the file
+        
             result = subprocess.run(
                 ['bandit', '-f', 'json', file_path],
                 capture_output=True,
@@ -212,7 +212,7 @@ class PythonAnalyzer:
         """Analyze performance issues"""
         issues = []
         
-            # here Checking for inefficient loops and nested loops
+        
         for node in ast.walk(tree):
             if isinstance(node, ast.For):
                 for child in ast.walk(node):
@@ -238,7 +238,7 @@ class PythonAnalyzer:
         """Calculate file metrics"""
         lines_of_code = len([line for line in content.splitlines() if line.strip()])
         
-        # Calculate average complexity
+    
         try:
             complexity_results = cc_visit(content)
             avg_complexity = sum(r.complexity for r in complexity_results) / len(complexity_results) if complexity_results else 0
@@ -259,21 +259,21 @@ class PythonAnalyzer:
         lines = content.splitlines()
         
         secret_patterns = [
-            # API Keys
+        
             (r'["\']?API_?KEY["\']?\s*=\s*["\'][^"\']{20,}["\']', 'API Key', 'critical'),
             (r'["\']?GOOGLE_API_KEY["\']?\s*=\s*["\'][^"\']{20,}["\']', 'Google API Key', 'critical'),
             (r'["\']?OPENAI_API_KEY["\']?\s*=\s*["\'][^"\']{20,}["\']', 'OpenAI API Key', 'critical'),
             (r'["\']?AWS_ACCESS_KEY["\']?\s*=\s*["\'][^"\']{16,}["\']', 'AWS Access Key', 'critical'),
             
-            # Database credentials
+        
             (r'["\']?PASSWORD["\']?\s*=\s*["\'][^"\']{6,}["\']', 'Hardcoded Password', 'high'),
             (r'["\']?DB_PASSWORD["\']?\s*=\s*["\'][^"\']{6,}["\']', 'Database Password', 'high'),
             
-            # Tokens
+        
             (r'["\']?TOKEN["\']?\s*=\s*["\'][^"\']{20,}["\']', 'Access Token', 'high'),
             (r'["\']?SECRET["\']?\s*=\s*["\'][^"\']{16,}["\']', 'Secret Key', 'high'),
             
-            # Common secret formats
+        
             (r'["\'][A-Za-z0-9]{32,}["\']', 'Potential Secret (32+ chars)', 'medium'),
             (r'sk-[A-Za-z0-9]{32,}', 'OpenAI Secret Key Format', 'critical'),
             (r'AIza[A-Za-z0-9_-]{35}', 'Google API Key Format', 'critical'),

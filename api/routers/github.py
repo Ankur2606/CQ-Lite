@@ -47,7 +47,7 @@ async def analyze_github_repo(
         "created_at": str(datetime.datetime.now()),
     })
     
-    # Add task to background
+
     background_tasks.add_task(
         process_github_analysis,
         job_id,
@@ -57,7 +57,7 @@ async def analyze_github_repo(
         job_store
     )
     
-    # Return initial response
+
     return AnalysisResponse(
         job_id=job_id,
         status=AnalysisJobStatus.PENDING,
@@ -73,15 +73,15 @@ async def process_github_analysis(
 ):
     """Process GitHub repository analysis in the background"""
     try:
-        # Update job status
+    
         job_store.update_job(job_id, {"status": AnalysisJobStatus.PROCESSING})
         
-        # Parse GitHub URL
+    
         repo_info = parse_github_url(request.repo_url)
         owner = repo_info["owner"]
         repo = repo_info["repo"]
         
-        # Fetch repository files using your existing tools
+    
         github_token = os.environ.get("GITHUB_API_TOKEN")
         print(f"Fetching GitHub repository: {request.repo_url}")
         print(f"Repository: {owner}/{repo}")
@@ -94,11 +94,11 @@ async def process_github_analysis(
         if not github_files:
             raise ValueError("No files fetched from the repository")
         
-        # Create a temporary directory to store the fetched files
+    
         temp_dir = f"temp-github-{owner}-{repo}"
         os.makedirs(temp_dir, exist_ok=True)
         
-        # Save the files to the temp directory
+    
         for github_file in github_files:
             file_path = os.path.join(temp_dir, github_file["file_path"])
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -106,7 +106,7 @@ async def process_github_analysis(
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(github_file["content"])
         
-        # Run analysis on the temporary directory
+    
         analysis_result = await analysis_service.analyze_path(
             temp_dir, 
             include_patterns=request.include_patterns,
@@ -114,13 +114,13 @@ async def process_github_analysis(
             max_files=request.max_files
         )
         
-        # Generate dependency graph
+    
         dependency_graph = await graph_service.generate_graph(temp_dir)
         
-        # Let the analysis results flow naturally
-        # If there's an issue, it will be caught in the main exception handler
+    
+    
         
-        # Debug the issues before storing them
+    
         print("\n------ DEBUG: GitHub Analysis Issues ------")
         for idx, issue in enumerate(analysis_result.issues):
             print(f"Issue {idx} type: {type(issue)}")
@@ -130,7 +130,7 @@ async def process_github_analysis(
             print(f"  Line: {getattr(issue, 'line_number', None)}")
             print(f"  Title: {getattr(issue, 'title', None)}")
         
-        # Update job with results
+    
         job_store.update_job(job_id, {
             "status": AnalysisJobStatus.COMPLETED,
             "summary": analysis_result.summary,
@@ -140,7 +140,7 @@ async def process_github_analysis(
         })
         
     except GitHubAPIException as e:
-        # Properly mark the job as failed with the actual error
+    
         error_msg = f"GitHub API error: {str(e)}"
         print(f"GitHub analysis failed: {error_msg}")
         job_store.update_job(job_id, {
@@ -149,7 +149,7 @@ async def process_github_analysis(
             "completed_at": str(datetime.datetime.now())
         })
     except Exception as e:
-        # Handle any other exceptions properly
+    
         import traceback
         error_msg = f"Analysis failed: {str(e)}"
         print(f"GitHub analysis error: {error_msg}")

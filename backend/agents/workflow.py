@@ -14,7 +14,7 @@ def detect_analysis_request(query: str) -> dict:
     """
     query_lower = query.lower()
     
-    # Patterns to detect analysis requests
+
     analysis_patterns = [
         r"analyze\s+(?:the\s+)?(?:codebase|folder|directory|path)?\s*(?:at|in|of)?\s*([^\s]+)",
         r"review\s+(?:the\s+)?(?:codebase|folder|directory|path)?\s*(?:at|in|of)?\s*([^\s]+)",
@@ -27,7 +27,7 @@ def detect_analysis_request(query: str) -> dict:
         match = re.search(pattern, query_lower)
         if match:
             path = match.group(1).strip()
-            # Extract model if specified
+        
             model_match = re.search(r"(?:using|with)\s+(?:model\s+)?([^\s]+)", query_lower)
             model = model_match.group(1) if model_match else "gemini"
             
@@ -46,7 +46,7 @@ def qna_agent_wrapper(state: CodeAnalysisState) -> CodeAnalysisState:
     current_query = state.get("current_query", "")
     conversation_history = state.get("conversation_history", [])
     
-    # Convert LangChain messages to the format expected by qna_agent
+
     history = []
     for msg in conversation_history:
         if hasattr(msg, 'type'):
@@ -56,20 +56,20 @@ def qna_agent_wrapper(state: CodeAnalysisState) -> CodeAnalysisState:
         content = msg.content if hasattr(msg, 'content') else str(msg.get("content", ""))
         history.append({"role": role, "content": content})
     
-    # Detect if this is an analysis request
+
     detection = detect_analysis_request(current_query)
     
     if detection["is_analysis"]:
-        # Update state to trigger analysis
+    
         state["analysis_requested"] = True
         state["detected_analysis_path"] = detection["path"]
         state["detected_model_choice"] = detection["model"]
         state["current_step"] = "analysis_triggered"
         
-        # Provide response about triggering analysis
+    
         answer = f"I'll analyze the codebase at '{detection['path']}' using the {detection['model']} model. Starting analysis now..."
     else:
-        # Regular Q&A
+    
         result = qna_agent_for_code(current_query, history)
         answer = result.get("answer", "I couldn't generate an answer.")
         state["analysis_context"] = {
@@ -77,7 +77,7 @@ def qna_agent_wrapper(state: CodeAnalysisState) -> CodeAnalysisState:
             "retrievals": result.get("retrievals", [])
         }
     
-    # Update conversation history with the response
+
     from langchain_core.messages import AIMessage
     response_message = AIMessage(content=answer)
     state["conversation_history"].append(response_message)
@@ -117,7 +117,7 @@ def route_language_analysis(state: CodeAnalysisState) -> str:
     if not has_python and not has_js and not has_docker:
         return "no_files"
     
-    # Use AI strategy to determine routing
+
     if strategy.get("parallel_processing", False) and has_python and has_js:
         return "python_analysis"  # Start with Python, JS will follow
     elif strategy.get("python_priority", True) and has_python:
@@ -143,7 +143,7 @@ def check_analysis_completion(state: CodeAnalysisState) -> str:
     docker_done = completion_status.get("docker", not docker_needed)
     
     if python_done and js_done and docker_done:
-        # Always go to AI review for comprehensive analysis
+    
         return "ai_review"
     elif not js_done and js_needed:
         return "javascript_analysis"
@@ -155,27 +155,27 @@ def check_analysis_completion(state: CodeAnalysisState) -> str:
 def create_agentic_analysis_workflow() -> StateGraph:
     """Creates the complete LangGraph workflow for agentic code analysis"""
     
-    # Initialize StateGraph
+
     workflow = StateGraph(CodeAnalysisState)
     
-    # Add agent nodes
+
     workflow.add_node("file_discovery", file_discovery_agent)
     workflow.add_node("python_analysis", python_analysis_agent)
     workflow.add_node("ai_review", ai_review_agent)  # Comprehensive AI review
     workflow.add_node("qna_agent", qna_agent_wrapper)  # Q&A agent for chat mode
     workflow.add_node("notion_report", notion_report_agent)  # Notion reporting agent
     
-    # Import and add JavaScript analysis agent
+
     from .javascript_analysis_agent import javascript_analysis_agent
     workflow.add_node("javascript_analysis", javascript_analysis_agent)
     
-    # Import and add Docker analysis agent
+
     from .docker_analysis_agent import docker_analysis_agent
     workflow.add_node("docker_analysis", docker_analysis_agent)
     
-    # workflow.add_node("report_synthesis", report_synthesis_agent)  # TODO: Implement
+
     
-    # Define workflow edges with intelligent routing
+
     workflow.add_conditional_edges(
         START,
         route_workflow_start,
@@ -185,7 +185,7 @@ def create_agentic_analysis_workflow() -> StateGraph:
         }
     )
     
-    # Q&A agent routing
+
     workflow.add_conditional_edges(
         "qna_agent",
         route_after_qna,
@@ -195,7 +195,7 @@ def create_agentic_analysis_workflow() -> StateGraph:
         }
     )
     
-    # Conditional routing based on discovered files
+
     workflow.add_conditional_edges(
         "file_discovery",
         route_language_analysis,
@@ -207,18 +207,18 @@ def create_agentic_analysis_workflow() -> StateGraph:
         }
     )
     
-    # Handle analysis completion
+
     workflow.add_conditional_edges(
         "python_analysis",
         check_analysis_completion,
         {
             "javascript_analysis": "javascript_analysis",
             "docker_analysis": "docker_analysis",
-            "ai_review": "ai_review"      # Go to comprehensive AI review
+            "ai_review": "ai_review"  
         }
     )
     
-    # Add edges for JavaScript and Docker analysis
+
     workflow.add_conditional_edges(
         "javascript_analysis",
         check_analysis_completion,
@@ -228,10 +228,10 @@ def create_agentic_analysis_workflow() -> StateGraph:
         }
     )
     
-    # Add edge from Docker analysis to AI review
+
     workflow.add_edge("docker_analysis", "ai_review")
     
-    # AI review to Notion routing
+
     workflow.add_conditional_edges(
         "ai_review",
         route_after_ai_review,
@@ -241,7 +241,7 @@ def create_agentic_analysis_workflow() -> StateGraph:
         }
     )
     
-    # Notion report completion
+
     workflow.add_edge("notion_report", END)
     
     return workflow.compile()

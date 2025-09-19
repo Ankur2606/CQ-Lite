@@ -18,7 +18,7 @@ def read_file_tool(file_path: str) -> str:
     """Reads the content of a file at the given path and returns it as a string."""
     print(f"--- Calling read_file_tool with: {file_path} ---")
     try:
-        # For safety, prevent reading files outside the current directory
+    
         if ".." in file_path:
             return "Error: Directory traversal is not allowed."
         with open(file_path, 'r', encoding='utf-8') as f:
@@ -73,8 +73,8 @@ builder.add_edge(START, "tool_calling_llm")
 builder.add_conditional_edges(
     "tool_calling_llm",
     tools_condition,
-    # If the condition is "tools", it routes to the "tools" node.
-    # If the condition is "end", it routes to the END node.
+
+
     {
         "tools": "tools",
         END: END
@@ -98,13 +98,13 @@ if __name__ == "__main__":
         if query.lower() == "exit":
             break
         
-        # Invoke the graph with the user's message
+    
         inputs = {"messages": [HumanMessage(content=query)]}
         
-        # The `stream` method gives us real-time output as the graph runs
+    
         for output in graph.stream(inputs):
             for key, value in output.items():
-                # We only want to print the final response from the AI
+            
                 if key == "tool_calling_llm" and not value['messages'][-1].tool_calls:
                     print(f"AI: {value['messages'][-1].content}")
 

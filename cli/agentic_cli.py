@@ -33,7 +33,7 @@ def env():
     click.echo("📝 CQ Lite - Environment Variables Guide")
     click.echo("\nThis tool requires various API keys for full functionality.")
     
-    # Check status of all environment variables
+
     github_token = os.environ.get("GITHUB_API_TOKEN")
     google_api_key = os.environ.get("GOOGLE_API_KEY")
     nebius_api_key = os.environ.get("NEBIUS_API_KEY")
@@ -47,7 +47,7 @@ def env():
     click.echo(f"  ✓ NOTION_TOKEN: {'Set' if notion_token else 'Not set'} - Required for Notion integration")
     click.echo(f"  ✓ NOTION_PAGE_ID: {'Set' if notion_page_id else 'Not set'} - Required for Notion integration")
     
-    # Print detailed setup instructions for any missing variables
+
     missing = []
     if not github_token:
         missing.append("GITHUB_API_TOKEN")
@@ -78,22 +78,22 @@ def env():
 def analyze(path, repourl, format, severity, insights, model, quick, notion, max_files):
     """Agentic code analysis using LangGraph orchestration"""
     
-    # Ensure either path or repourl is provided
+
     if not path and not repourl:
         click.echo("❌ Error: Either PATH or --repourl must be provided", err=True)
         return 1
     
-    # Check AI API credentials are available
+
     if not check_ai_credentials(model):
         click.echo(f"❌ Error: Missing AI credentials for {model} model", err=True)
         return 1
     
-    # Handle GitHub repository URL
+
     github_files = []
     target_path = path or "github-repo"
     
     if repourl:
-        # Check GitHub API token is available
+    
         if not check_github_token():
             click.echo("❌ Error: GitHub API token is required for repository analysis", err=True)
             return 1
@@ -105,11 +105,11 @@ def analyze(path, repourl, format, severity, insights, model, quick, notion, max
             repo_info = parse_github_url(repourl)
             click.echo(f"📦 Repository: {repo_info['owner']}/{repo_info['repo']}")
             
-            # Fetch repository files
+        
             github_files = fetch_repo_files(repourl, max_files=max_files)
             click.echo(f"📚 Downloaded {len(github_files)} files for analysis")
             
-            # Use repo name as target path if no path is provided
+        
             if not path:
                 target_path = f"github-repo-{repo_info['owner']}-{repo_info['repo']}"
                 
@@ -128,12 +128,12 @@ def analyze(path, repourl, format, severity, insights, model, quick, notion, max
     
     if notion:
         click.echo("📝 Notion reporting enabled - results will be pushed to Notion")
-        # Check if Notion credentials are set
+    
         if not check_notion_credentials():
             click.echo("⚠️  Warning: Notion reporting will be skipped due to missing credentials.")
     
     async def run_agentic_analysis():
-        # Initialize agent state from CLI parameters
+    
         initial_state = CodeAnalysisState(
             target_path=target_path,
             include_patterns=["*.py", "*.js", "*.ts", "*.jsx", "*.tsx"],
@@ -168,16 +168,16 @@ def analyze(path, repourl, format, severity, insights, model, quick, notion, max
         )
         
         try:
-            # Execute agentic workflow
+        
             click.echo("🔄 Executing AI agent workflow...")
             result = await agentic_workflow.ainvoke(initial_state)
             
-            # Display results
+        
             click.echo(f"✅ Analysis complete! Current step: {result.get('current_step', 'unknown')}")
             click.echo(f"📊 Files discovered: {result.get('discovered_files', {})}")
             click.echo(f"🔍 Issues found: {len(result.get('all_issues', []))}")
             
-            # Show AI review summary if available
+        
             ai_review = result.get("ai_review", {})
             if ai_review:
                 click.echo(f"\n🤖 AI COMPREHENSIVE REVIEW:")
@@ -193,12 +193,12 @@ def analyze(path, repourl, format, severity, insights, model, quick, notion, max
                 if recommendations.get("immediate_actions"):
                     click.echo(f"⚡ Immediate Actions: {recommendations['immediate_actions']}")
             
-            # Format output if we have issues
+        
             if result.get("all_issues"):
-                # Create a mock AnalysisResult for formatting
+            
                 from backend.models.analysis_models import AnalysisResult, IssueSeverity
                 
-                # Sort issues by severity
+            
                 severity_order = {
                     IssueSeverity.CRITICAL: 4,
                     IssueSeverity.HIGH: 3,
@@ -211,7 +211,7 @@ def analyze(path, repourl, format, severity, insights, model, quick, notion, max
                     reverse=True
                 )
                 
-                # Calculate severity breakdown
+            
                 severity_breakdown = {}
                 for issue in sorted_issues:
                     severity_breakdown[issue.severity] = severity_breakdown.get(issue.severity, 0) + 1
@@ -232,7 +232,7 @@ def analyze(path, repourl, format, severity, insights, model, quick, notion, max
                 
                 if format == 'json':
                     import json
-                    # Include AI review in JSON output
+                
                     output_data = mock_result.dict()
                     output_data["ai_review"] = ai_review
                     click.echo(json.dumps(output_data, indent=2, default=str))
@@ -256,37 +256,37 @@ def analyze(path, repourl, format, severity, insights, model, quick, notion, max
 @click.option('--max-files', type=int, default=100, help='Maximum number of files to analyze when using --repourl')
 def review(path, repourl, format, service, notion, max_files):
     """Generate a comprehensive code review with analysis and recommendations"""
-    # Always enable insights for reviews
+
     insights = True
     
-    # If notion is specified as format or flag, enable Notion reporting
+
     notion_enabled = notion or format == 'notion'
     
     if not path and not repourl:
         click.echo("❌ Error: Either PATH or --repourl must be provided", err=True)
         return 1
     
-    # Check AI API credentials are available
+
     if not check_ai_credentials(service):
         click.echo(f"❌ Error: Missing AI credentials for {service} model", err=True)
         return 1
     
-    # If GitHub repo URL is provided, check for GitHub token
+
     if repourl and not check_github_token():
         click.echo("❌ Error: GitHub API token is required for repository analysis", err=True)
         return 1
     
-    # Check Notion credentials if Notion reporting is enabled
+
     if notion_enabled and not check_notion_credentials():
         click.echo("⚠️  Warning: Notion reporting will be skipped due to missing credentials.")
     
-    # This is a wrapper around analyze with pre-configured options optimized for reviews
+
     click.echo(f"📝 Generating comprehensive code review using {service} AI service")
     
     if notion_enabled:
         click.echo("📊 Review will be pushed to Notion")
     
-    # Call analyze with review-optimized parameters
+
     return analyze(
         path=path,
         repourl=repourl,
@@ -304,12 +304,12 @@ def review(path, repourl, format, service, notion, max_files):
 @click.option('--notion', is_flag=True, help='Push analysis results to Notion when analysis is triggered (requires NOTION_TOKEN and NOTION_PAGE_ID env vars)')
 def chat(context, notion):
     """Interactive Q&A using agentic workflow with analysis triggering"""
-    # Check AI API credentials are available (default to gemini model)
+
     if not check_ai_credentials("gemini"):
         click.echo("❌ Error: Missing AI credentials for chat functionality", err=True)
         return 1
     
-    # Check Notion credentials if Notion reporting is enabled
+
     if notion and not check_notion_credentials():
         click.echo("⚠️  Warning: Notion reporting will be skipped due to missing credentials.")
     
@@ -319,7 +319,7 @@ def chat(context, notion):
     if context:
         click.echo(f"📁 Context loaded from: {context}")
     
-    # Initialize chat state
+
     from langchain_core.messages import HumanMessage, AIMessage
     
     conversation_history = []
@@ -332,10 +332,10 @@ def chat(context, notion):
                 click.echo("👋 Goodbye!")
                 break
             
-            # Add user message to history
+        
             conversation_history.append(HumanMessage(content=user_input))
             
-            # Initialize agent state for this query
+        
             initial_state = CodeAnalysisState(
                 target_path=context or ".",  # Use context path or current directory
                 include_patterns=["*.py", "*.js", "*.ts", "*.jsx", "*.tsx"],
@@ -371,7 +371,7 @@ def chat(context, notion):
                 try:
                     result = await agentic_workflow.ainvoke(initial_state)
                     
-                    # Get the latest response from conversation history
+                
                     if result.get("conversation_history"):
                         last_message = result["conversation_history"][-1]
                         if hasattr(last_message, 'content'):
@@ -381,15 +381,15 @@ def chat(context, notion):
                         
                         click.echo(f"\n🤖 Assistant: {response}")
                         
-                        # Add assistant response to history
+                    
                         conversation_history.append(AIMessage(content=response))
                     
-                    # If analysis was triggered, show analysis results
+                
                     if result.get("analysis_requested"):
                         click.echo(f"\n📊 Analysis triggered for: {result.get('detected_analysis_path')}")
                         click.echo(f"📈 Analysis complete! Found {len(result.get('all_issues', []))} issues")
                         
-                        # Show summary if available
+                    
                         if result.get("final_report"):
                             report = result["final_report"]
                             click.echo(f"📋 Total files: {report.total_files}")
@@ -409,7 +409,7 @@ def chat(context, notion):
 
 def check_env_setup():
     """Check if environment variables are set up and provide a gentle reminder if not."""
-    # Check for key environment variables
+
     has_github = os.environ.get("GITHUB_API_TOKEN") is not None
     has_ai = (os.environ.get("GOOGLE_API_KEY") is not None or
               os.environ.get("NEBIUS_API_KEY") is not None)

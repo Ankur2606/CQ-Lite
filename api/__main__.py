@@ -40,10 +40,10 @@ def main():
     
     args = parser.parse_args()
     
-    # Start the API server
+
     print(f"Starting API server at http://{args.host}:{args.port}")
     
-    # Import within function to avoid circular imports
+
     import uvicorn
     import datetime
     

@@ -30,7 +30,7 @@ def analyze(path, format, severity, insights):
         result = await analyzer.analyze_path(path, generate_insights=insights)
         
         if severity:
-            # Filter issues by severity
+        
             result.issues = [issue for issue in result.issues if issue.severity == severity]
         
         if format == 'json':
@@ -51,7 +51,7 @@ def chat(context):
     async def run_chat():
         gemini_service = GeminiService()
         
-        # Load context if provided
+    
         context_data = None
         if context:
             click.echo(f"📁 Loading context from: {context}")

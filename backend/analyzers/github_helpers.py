@@ -17,10 +17,10 @@ def create_temp_file_from_github_data(file_content: str, file_path: str) -> str:
     Returns:
         Path to the temporary file
     """
-    # Extract extension from the file path
+
     _, ext = os.path.splitext(file_path)
     
-    # Create temporary file with the correct extension
+
     with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as temp_file:
         temp_file.write(file_content.encode('utf-8'))
         return temp_file.name

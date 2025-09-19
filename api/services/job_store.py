@@ -15,7 +15,7 @@ class JobStore:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(JobStore, cls).__new__(cls)
-            # Initialize the jobs dictionary
+        
             cls._instance.jobs = {}
         return cls._instance
     

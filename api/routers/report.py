@@ -30,15 +30,15 @@ async def generate_report(request: ReportRequest, job_store: JobStore = Depends(
     if job["status"] != AnalysisJobStatus.COMPLETED:
         raise HTTPException(status_code=400, detail=f"Analysis is not complete. Current status: {job['status']}")
     
-    # Check if required data exists
+
     if "summary" not in job or "issues" not in job:
         raise HTTPException(status_code=400, detail="Job lacks required analysis data for reporting")
         
-    # Convert any backend model issues to API model issues
+
     if "issues" in job:
         job["issues"] = convert_backend_issues_to_api_issues(job["issues"])
     
-    # Generate the report based on the requested format
+
     if request.format == "json":
         return generate_json_report(job)
     elif request.format == "html":
@@ -50,10 +50,10 @@ async def generate_report(request: ReportRequest, job_store: JobStore = Depends(
 
 def generate_json_report(job: Dict[str, Any]) -> JSONResponse:
     """Generate a JSON report from analysis results"""
-    # Create a serializable version of the job dictionary
+
     serializable_job = {}
     
-    # Helper function to recursively make any object JSON serializable
+
     def make_serializable(obj):
         if hasattr(obj, 'dict') and callable(obj.dict):  # It's a Pydantic model
             return obj.dict()
@@ -78,7 +78,7 @@ def generate_json_report(job: Dict[str, Any]) -> JSONResponse:
                 return "Unserializable object"
     
     try:
-        # Process each key in the job dictionary
+    
         for key, value in job.items():
             serializable_job[key] = make_serializable(value)
                 
@@ -87,7 +87,7 @@ def generate_json_report(job: Dict[str, Any]) -> JSONResponse:
         import traceback
         print(f"Error generating JSON report: {str(e)}")
         print(traceback.format_exc())
-        # Return a simplified report as fallback
+    
         return JSONResponse(
             content={"error": "Could not generate complete JSON report", 
                     "message": str(e),
@@ -97,7 +97,7 @@ def generate_json_report(job: Dict[str, Any]) -> JSONResponse:
 
 def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
     """Generate an HTML report from analysis results"""
-    # Print issues for debugging
+
     print(f"HTML Report - Issues count: {len(job.get('issues', []))}")
     for i, issue in enumerate(job.get('issues', [])):
         if hasattr(issue, 'get'):
@@ -105,7 +105,7 @@ def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
         else:
             print(f"Issue {i+1}: {getattr(issue, 'message', 'No message')} - File: {getattr(issue, 'file', 'Unknown')}")
     
-    # Modern HTML template for the report with dark theme
+
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -505,7 +505,7 @@ def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
                 <p class="issues-description">The following issues were identified during code analysis. Issues are sorted by severity.</p>
     """
     
-    # Check if there are any issues
+
     if not job.get('issues', []):
         html_content += """
                 <div class="no-issues">
@@ -515,7 +515,7 @@ def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
                 </div>
         """
     else:
-        # Sort issues by severity (Critical > High > Medium > Low)
+    
         severity_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3, 'unknown': 4}
         
         def get_severity_order(issue):
@@ -526,9 +526,9 @@ def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
         
         sorted_issues = sorted(job.get('issues', []), key=get_severity_order)
         
-        # Add each issue to the HTML
+    
         for issue in sorted_issues:
-            # Check if issue is a dictionary or a CodeIssue object
+        
             if hasattr(issue, 'get'):  # It's a dictionary
                 severity_class = issue.get('severity', 'low').lower()
                 message = issue.get('message', 'Unknown Issue')
@@ -553,18 +553,18 @@ def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
                 code_snippet = getattr(issue, 'code_snippet', '')
                 ai_analysis = getattr(issue, 'ai_analysis', '')
             
-            # Format any AI analysis to make it more readable
+        
             formatted_ai_analysis = ""
             if ai_analysis:
-                # Try to detect and format common AI analysis patterns
+            
                 if "🤖 AI Analysis:" in ai_analysis and "💼 Business Impact:" in ai_analysis:
-                    # This is likely a structured AI analysis with emoji markers
+                
                     formatted_ai_analysis = ai_analysis.replace("🤖 AI Analysis:", "<strong>🤖 AI Analysis:</strong>") \
                                                      .replace("💼 Business Impact:", "<br><br><strong>💼 Business Impact:</strong>") \
                                                      .replace("📝 Code Example:", "<br><br><strong>📝 Code Example:</strong>") \
                                                      .replace("🛡️ Prevention:", "<br><br><strong>🛡️ Prevention:</strong>")
                 else:
-                    # Just use the raw ai_analysis
+                
                     formatted_ai_analysis = ai_analysis
             
             html_content += f"""
@@ -585,7 +585,7 @@ def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
                 </div>
         """
     
-    # Close the HTML tags and add footer
+
     html_content += f"""
             </div>
             <footer class="footer">
@@ -601,7 +601,7 @@ def generate_html_report(job: Dict[str, Any]) -> HTMLResponse:
 def generate_markdown_report(job: Dict[str, Any]) -> PlainTextResponse:
     """Generate a Markdown report from analysis results"""
     
-    # Calculate severity counts directly from issues
+
     critical_count = sum(1 for issue in job.get('issues', []) if (issue.get('severity', '').lower() if hasattr(issue, 'get') else getattr(issue, 'severity', '').lower()) == 'critical')
     high_count = sum(1 for issue in job.get('issues', []) if (issue.get('severity', '').lower() if hasattr(issue, 'get') else getattr(issue, 'severity', '').lower()) == 'high')
     medium_count = sum(1 for issue in job.get('issues', []) if (issue.get('severity', '').lower() if hasattr(issue, 'get') else getattr(issue, 'severity', '').lower()) == 'medium')
@@ -610,7 +610,7 @@ def generate_markdown_report(job: Dict[str, Any]) -> PlainTextResponse:
     total_issues = len(job.get('issues', []))
     total_files = job.get('summary', {}).get('total_files') or len(set(issue.get('file', '') if hasattr(issue, 'get') else getattr(issue, 'file', '') for issue in job.get('issues', [])))
     
-    # Calculate percentages
+
     critical_pct = round((critical_count / max(total_issues, 1)) * 100, 1)
     high_pct = round((high_count / max(total_issues, 1)) * 100, 1)
     medium_pct = round((medium_count / max(total_issues, 1)) * 100, 1)
@@ -631,7 +631,7 @@ def generate_markdown_report(job: Dict[str, Any]) -> PlainTextResponse:
 ## Issues
 """
     
-    # Sort issues by severity (Critical > High > Medium > Low)
+
     severity_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3, 'unknown': 4}
     
     def get_severity_order(issue):
@@ -642,10 +642,10 @@ def generate_markdown_report(job: Dict[str, Any]) -> PlainTextResponse:
     
     sorted_issues = sorted(job.get('issues', []), key=get_severity_order)
     
-    # Add each issue to the markdown
+
     for issue in sorted_issues:
-        # Check if issue is a dictionary or a CodeIssue object
-        if hasattr(issue, 'get'):  # It's a dictionary
+    
+        if hasattr(issue, 'get'): 
             severity_raw = issue.get('severity', 'low')
             message = issue.get('message', 'Unknown Issue')
             file_path = issue.get('file', 'Unknown file')

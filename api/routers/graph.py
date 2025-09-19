@@ -30,7 +30,7 @@ async def get_dependency_graph(job_id: str, job_store: JobStore = Depends(get_jo
     elif job["status"] != AnalysisJobStatus.COMPLETED:
         raise HTTPException(status_code=400, detail=f"Analysis is not complete. Current status: {job['status']}")
     
-    # Check if dependency graph exists
+
     if "dependency_graph" not in job:
         raise HTTPException(status_code=404, detail="Dependency graph not found for this job")
     

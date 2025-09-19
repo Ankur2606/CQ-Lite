@@ -10,7 +10,7 @@ console = Console()
 def format_analysis_result(result: AnalysisResult, show_insights: bool = False) -> str:
     """Format analysis result for CLI display"""
     
-    # Summary panel
+
     summary_text = f"""
 📊 Analysis Summary
 • Files analyzed: {result.total_files}
@@ -22,7 +22,7 @@ def format_analysis_result(result: AnalysisResult, show_insights: bool = False) 
     
     console.print(Panel(summary_text, title="📈 Code Analysis Results", border_style="blue"))
     
-    # Issues by severity
+
     if result.issues:
         severity_table = Table(title="🚨 Issues by Severity")
         severity_table.add_column("Severity", style="bold")
@@ -53,7 +53,7 @@ def format_analysis_result(result: AnalysisResult, show_insights: bool = False) 
         console.print(severity_table)
         
         
-        # Group issues by category
+    
         categorized_issues = {}
         for issue in result.issues:
             category = issue.category.value.replace('_', ' ').title()
@@ -61,7 +61,7 @@ def format_analysis_result(result: AnalysisResult, show_insights: bool = False) 
                 categorized_issues[category] = []
             categorized_issues[category].append(issue)
             
-        # Display issues by category
+    
         for category, issues in categorized_issues.items():
             console.print(f"\n--- {category} ({len(issues)}) ---")
             max_display = min(20, len(issues))
@@ -95,7 +95,7 @@ def format_analysis_result(result: AnalysisResult, show_insights: bool = False) 
                 
                 console.print(Panel(issue_text, border_style=severity_color))
         
-        # Show note if there are more issues
+    
         if len(result.issues) > 20:
             remaining = len(result.issues) - 20
             console.print(f"\n📝 ... and {remaining} more issues (use --format json to see all)")
@@ -105,10 +105,10 @@ def format_analysis_result(result: AnalysisResult, show_insights: bool = False) 
 def format_chat_response(response: ChatResponse) -> str:
     """Format chat response for CLI display"""
     
-    # Main response
+
     console.print(Panel(response.message, title="🤖 Assistant", border_style="green"))
     
-    # Suggestions
+
     if response.suggestions:
         console.print("\n💡 Follow-up suggestions:")
         for i, suggestion in enumerate(response.suggestions, 1):
@@ -243,7 +243,7 @@ def get_detailed_resolution(issue) -> str:
 """
     }
     
-    # Match issue to resolution guide
+
     issue_key = None
     issue_lower = issue.title.lower() + " " + issue.description.lower()
     
@@ -267,7 +267,7 @@ def get_detailed_resolution(issue) -> str:
     if issue_key and issue_key in resolution_guides:
         return resolution_guides[issue_key]
     else:
-        # Generic resolution steps
+    
         return f"""
 1. 🔍 Review the issue: {issue.description}
 2. ✅ Apply the suggestion: {issue.suggestion}
@@ -298,12 +298,12 @@ def get_concise_resolution(issue) -> str:
         "console statement": "🔧 Remove console.log() or use proper logging\n📝 console.log(msg) → logger.debug(msg) or remove\n⚠️  Keeps production code clean"
     }
     
-    # Match issue to concise guide
+
     issue_lower = issue.title.lower() + " " + issue.description.lower()
     
     for key, guide in concise_guides.items():
         if key.replace(" ", "") in issue_lower.replace(" ", ""):
             return guide
     
-    # Generic concise resolution
+
     return f"🔧 {issue.suggestion}\n⚠️  Impact: {issue.impact_score}/10"

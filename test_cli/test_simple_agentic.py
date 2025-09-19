@@ -20,7 +20,7 @@ def test_environment():
     print("🔧 Testing Environment Configuration")
     print("=" * 40)
     
-    # Check API key
+
     api_key = os.getenv('GOOGLE_API_KEY')
     if api_key:
         print(f"✅ GOOGLE_API_KEY found: {api_key[:10]}...")
@@ -28,14 +28,14 @@ def test_environment():
         print("❌ GOOGLE_API_KEY not found in environment")
         return False
     
-    # Test Google Generative AI import
+
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel('gemini-2.5-flash')
         print("✅ Google Generative AI configured successfully")
         
-        # Test simple generation
+    
         response = model.generate_content("Say hello")
         print(f"✅ Test generation successful: {response.text[:50]}...")
         
@@ -71,7 +71,7 @@ async def test_basic_workflow():
         from backend.agents.file_discovery_agent import file_discovery_agent
         from backend.agents.state_schema import CodeAnalysisState
         
-        # Create minimal state
+    
         state = CodeAnalysisState(
             target_path="./backend",
             include_patterns=["*.py"],
@@ -96,7 +96,7 @@ async def test_basic_workflow():
             final_report=None
         )
         
-        # Test file discovery agent
+    
         result = file_discovery_agent(state)
         
         print(f"✅ File discovery completed")
@@ -120,15 +120,15 @@ async def main():
     tests_passed = 0
     total_tests = 3
     
-    # Test 1: Environment
+
     if test_environment():
         tests_passed += 1
     
-    # Test 2: File Discovery
+
     if test_file_discovery():
         tests_passed += 1
     
-    # Test 3: Basic Workflow
+
     if await test_basic_workflow():
         tests_passed += 1
     

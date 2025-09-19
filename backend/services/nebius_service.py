@@ -12,8 +12,8 @@ def get_nebius_client() -> OpenAI:
     if _client is None:
         api_key = os.environ.get("NEBIUS_API_KEY")
         if not api_key:
-            # For now, we won't raise an error to allow Gemini to function if Nebius is not configured.
-            # The error will be handled when the service is actually used.
+        
+        
             print("⚠️ NEBIUS_API_KEY environment variable not set. Nebius AI will not be available.")
             return None
         
@@ -31,7 +31,7 @@ class NebiusModel:
     def __init__(self):
         self.client = get_nebius_client()
         self.model = "openai/gpt-oss-120b"
-        # self.model = "mistralai/Devstral-Small-2505"
+    
 
     def generate_content(self, prompt: str) -> 'NebiusResponse':
         """
@@ -40,8 +40,8 @@ class NebiusModel:
         if not self.client:
             raise ValueError("Nebius client is not initialized. Please set the NEBIUS_API_KEY environment variable.")
 
-        # The prompt in the existing agents is a single string.
-        # We will use a generic system prompt and pass the agent's prompt as the user message.
+    
+    
         system_prompt = "You are a world-class expert code analysis AI. Follow the user's instructions carefully and provide your response in the requested format."
         
         response = self.client.chat.completions.create(

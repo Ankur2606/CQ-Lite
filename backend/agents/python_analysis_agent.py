@@ -18,7 +18,7 @@ def chunk_code_for_embedding(code: str, max_chars: int = 3000, overlap: int = 30
     """
     Splits code into chunks for embedding, trying to preserve logical blocks.
     """
-    # Attempt to split by larger structures first
+
     chunks = re.split(r'(\nclass |\ndef )', code)
     
     processed_chunks = []
@@ -34,7 +34,7 @@ def chunk_code_for_embedding(code: str, max_chars: int = 3000, overlap: int = 30
     if temp_chunk:
         processed_chunks.append(temp_chunk)
 
-    # If chunks are still too large, fall back to slicing
+
     final_chunks = []
     for chunk in processed_chunks:
         if len(chunk) > max_chars:
@@ -82,7 +82,7 @@ def read_file_content(file_path: str, github_files: List[Dict] = None, max_chars
     Returns:
         File content or error message
     """
-    # Check if we have GitHub files
+
     if github_files:
         from backend.analyzers.github_helpers import find_github_file_by_path
         github_file = find_github_file_by_path(github_files, file_path)
@@ -90,7 +90,7 @@ def read_file_content(file_path: str, github_files: List[Dict] = None, max_chars
             content = github_file.get("content", "")
             return content[:max_chars] + "..." if len(content) > max_chars else content
     
-    # Fall back to local file
+
     try:
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
             content = f.read()
@@ -102,7 +102,7 @@ def merge_and_enhance_issues(ast_issues: List[CodeIssue], ai_decisions: str, fil
     """Merge traditional analysis with AI enhancements and return file metadata"""
     print(f"🔍 Parsing AI decisions for {file_path}: {ai_decisions[:100]}...")
     
-    # Default metadata
+
     file_metadata = {
         "truncated": False,
         "description": "",
@@ -112,10 +112,10 @@ def merge_and_enhance_issues(ast_issues: List[CodeIssue], ai_decisions: str, fil
     }
     
     try:
-        # Clean the response text
+    
         cleaned_text = ai_decisions.strip()
         
-        # Remove any markdown code blocks if present
+    
         if cleaned_text.startswith('```json'):
             cleaned_text = cleaned_text[7:]
         if cleaned_text.startswith('```'):
@@ -125,7 +125,7 @@ def merge_and_enhance_issues(ast_issues: List[CodeIssue], ai_decisions: str, fil
         
         cleaned_text = cleaned_text.strip()
         
-        # Try to find JSON object boundaries
+    
         start_idx = cleaned_text.find('{')
         end_idx = cleaned_text.rfind('}')
         
@@ -134,7 +134,7 @@ def merge_and_enhance_issues(ast_issues: List[CodeIssue], ai_decisions: str, fil
             ai_data = json.loads(json_text)
             print("✅ Successfully parsed AI decisions JSON")
             
-            # Extract file metadata
+        
             file_metadata = {
                 "truncated": ai_data.get('truncated', False),
                 "description": ai_data.get('description', ''),
@@ -143,10 +143,10 @@ def merge_and_enhance_issues(ast_issues: List[CodeIssue], ai_decisions: str, fil
                 "architectural_concerns": ai_data.get('architectural_concerns', [])
             }
             
-            # Enhance existing issues with AI insights
+        
             enhanced_issues = []
             for issue in ast_issues:
-                # Add AI enhancement to suggestion if available
+            
                 ai_enhancement = ai_data.get('enhanced_suggestions', {}).get(issue.id, '')
                 if ai_enhancement:
                     issue.suggestion = f"{issue.suggestion}\n\n🤖 AI Enhancement: {ai_enhancement}"
@@ -162,7 +162,7 @@ def merge_and_enhance_issues(ast_issues: List[CodeIssue], ai_decisions: str, fil
     except Exception as e:
         print(f"❌ Error parsing AI decisions: {e}")
     
-    # Return original issues if AI enhancement fails
+
     print("⚠️ Using original issues due to AI parsing failure")
     return ast_issues, file_metadata
 
@@ -198,7 +198,7 @@ def python_analysis_agent(state: CodeAnalysisState) -> CodeAnalysisState:
             }
         }
     
-    # Get the selected model from the state
+
     model_choice = state.get("model_choice", "gemini")
     llm_model = get_llm_model(model_choice)
 
@@ -207,17 +207,17 @@ def python_analysis_agent(state: CodeAnalysisState) -> CodeAnalysisState:
 
     print(f"🐍 Analyzing {len(python_files)} Python files...")
     
-    # Check for GitHub files in state
+
     github_files = state.get("github_files", [])
     
     for file_path in python_files[:10]:  # Limit for demo
         print(f"📁 Analyzing: {file_path}")
-        # Traditional AST + Tool Analysis
+    
         import asyncio
         ast_issues, metrics = asyncio.run(run_python_analysis(file_path, github_files))
         print(f"   Found {len(ast_issues)} issues in {file_path}")
         
-        # AI-Enhanced Analysis Decision Making
+    
         file_content = read_file_content(file_path, github_files)
         analysis_prompt = f"""As a Python code quality expert, analyze this file and make decisions:
 
@@ -278,7 +278,7 @@ Your response:"""
                 python_issues.extend(enhanced_issues)
                 file_metadata[file_path] = metadata
 
-                # Vector Store Integration
+            
                 if not state.get("skip_vector_store", False):
                     try:
                         print(f"   💾 Indexing {file_path} in vector store...")
@@ -303,7 +303,7 @@ Your response:"""
                 else:
                     print("   ⏩ Skipping vector store indexing due to --quick flag.")
             else:
-                # Fallback to original issues if AI not available
+            
                 print(f"   ⚠️ No AI model available for enhancement. Using static analysis results.")
                 python_issues.extend(ast_issues)
                 file_metadata[file_path] = {
@@ -314,7 +314,7 @@ Your response:"""
                     "architectural_concerns": []
                 }
         except Exception as e:
-            # Fallback to original issues if AI fails
+        
             print(f"   ❌ AI enhancement failed for {file_path}: {e}")
             python_issues.extend(ast_issues)
             file_metadata[file_path] = {

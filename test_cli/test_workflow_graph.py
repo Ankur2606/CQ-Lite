@@ -13,13 +13,13 @@ def generate_workflow_graph_ascii():
     """
     print("🤖 Initializing agentic workflow to generate ASCII graph...")
     
-    # Get the compiled app from the workflow factory
+
     agentic_workflow = create_agentic_analysis_workflow()
     
     print("\n📊 Workflow Graph (ASCII Representation):")
     
     try:
-        # Get the graph object and print the ASCII representation
+    
         agentic_workflow.get_graph().print_ascii()
         
         print("\n✅ Successfully printed the workflow graph.")

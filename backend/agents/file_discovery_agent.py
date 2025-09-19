@@ -16,14 +16,14 @@ def process_github_files(github_files: List[Dict], max_files: Optional[int] = No
     files_processed = 0
     
     for file in github_files:
-        # Check if we've reached the max files limit
+    
         if max_files and files_processed >= max_files:
             print(f"🚫 Reached max files limit ({max_files}), stopping processing")
             break
             
         file_path = file.get("file_path", "")
         filename = file_path.lower()
-        # Use Path to extract extension, but keep original path as string
+    
         ext = Path(file_path).suffix.lower()
         
         print(f"📄 Processing file: {file_path} (ext: {ext})")
@@ -69,7 +69,7 @@ def discover_files_by_language(target_path: str, include_patterns: List[str]) ->
             discovered_files["docker"].append(file_str)
         return discovered_files
     
-    # Special handling for Dockerfile (no extension)
+
     dockerfile = path_obj / "Dockerfile"
     if dockerfile.exists():
         discovered_files["docker"].append(str(dockerfile))
@@ -96,10 +96,10 @@ def parse_strategy_response(response_content: str) -> Dict[str, any]:
     print(f"🔍 Parsing strategy response: {response_content[:100]}...")
     
     try:
-        # Clean the response text
+    
         cleaned_text = response_content.strip()
         
-        # Remove any markdown code blocks if present
+    
         if cleaned_text.startswith('```json'):
             cleaned_text = cleaned_text[7:]
         if cleaned_text.startswith('```'):
@@ -109,7 +109,7 @@ def parse_strategy_response(response_content: str) -> Dict[str, any]:
         
         cleaned_text = cleaned_text.strip()
         
-        # Try to find JSON object boundaries
+    
         start_idx = cleaned_text.find('{')
         end_idx = cleaned_text.rfind('}')
         
@@ -127,7 +127,7 @@ def parse_strategy_response(response_content: str) -> Dict[str, any]:
     except Exception as e:
         print(f"❌ Error parsing strategy response: {e}")
     
-    # Fallback strategy
+
     print("⚠️ Using fallback strategy due to parsing failure")
     return {
         "parallel_processing": True,
@@ -140,12 +140,12 @@ def parse_strategy_response(response_content: str) -> Dict[str, any]:
 def file_discovery_agent(state: CodeAnalysisState) -> CodeAnalysisState:
     """AI-powered file discovery and analysis strategy determination"""
     
-    # If analysis was triggered from chat, use detected parameters
+
     target_path = state.get("detected_analysis_path") or state["target_path"]
     model_choice = state.get("detected_model_choice") or state.get("model_choice", "gemini")
     max_files_limit = state.get("max_files_limit")
     
-    # Check if we're analyzing a GitHub repository
+
     is_github_repo = state.get("is_github_repo", False)
     github_files = state.get("github_files", [])
     
@@ -154,28 +154,28 @@ def file_discovery_agent(state: CodeAnalysisState) -> CodeAnalysisState:
         discovered_files = process_github_files(github_files, max_files_limit)
     else:
         print(f"🔍 Discovering files in: {target_path} (model: {model_choice})")
-        # Discover files using existing logic for local files
+    
         discovered_files = discover_files_by_language(
             target_path, 
             state["include_patterns"]
         )
         
-        # Apply max_files limit to local file discovery as well
+    
         if max_files_limit:
             total_files = sum(len(files) for files in discovered_files.values())
             if total_files > max_files_limit:
                 print(f"🚫 Limiting analysis to {max_files_limit} files (found {total_files})")
-                # Truncate each language's file list proportionally
+            
                 for lang in discovered_files:
                     if discovered_files[lang]:
                         current_len = len(discovered_files[lang])
                         new_len = min(current_len, max_files_limit // len([k for k, v in discovered_files.items() if v]))
                         discovered_files[lang] = discovered_files[lang][:new_len]
     
-    # Get the selected model from the state
+
     llm_model = get_llm_model(model_choice)
 
-    # AI Strategy Planning
+
     strategy_prompt = f"""Analyze this codebase structure and determine optimal analysis strategy:
 
 Python files: {len(discovered_files.get('python', []))}
@@ -207,12 +207,12 @@ Your response:"""
             strategy_response = llm_model.generate_content(strategy_prompt)
             analysis_strategy = parse_strategy_response(strategy_response.text)
         else:
-            # If no model is available (e.g., no API keys), use a default strategy
+        
             print("⚠️ No AI model available for strategy planning. Using default strategy.")
             raise Exception(f"{model_choice.capitalize()} API key not configured or model unavailable.")
 
     except Exception as e:
-        # Fallback strategy if AI fails
+    
         print(f"❌ AI strategy planning failed: {e}")
         analysis_strategy = {
             "parallel_processing": len(discovered_files.get('python', [])) > 0 and len(discovered_files.get('javascript', [])) > 0,

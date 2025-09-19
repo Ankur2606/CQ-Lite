@@ -46,8 +46,8 @@ class AnalysisService:
         print(f"Using service: {service}")
         print(f"Include patterns: {include_patterns}")
         
-        # For server API, always skip vector store operations to improve performance
-        # This is similar to the CLI's --quick option
+    
+    
         """
         Analyze code at the given path using the agentic workflow
         
@@ -60,7 +60,7 @@ class AnalysisService:
         Returns:
             Analysis results
         """
-        # Initialize the state for analysis
+    
         initial_state = CodeAnalysisState(
             target_path=path,
             include_patterns=include_patterns,
@@ -94,7 +94,7 @@ class AnalysisService:
             is_github_repo=False
         )
         
-        # Run the analysis workflow
+    
         try:
             result = await self.workflow.ainvoke(initial_state)
             print(f"Analysis workflow completed successfully")
@@ -104,10 +104,10 @@ class AnalysisService:
             print(traceback.format_exc())
             raise RuntimeError(f"Analysis workflow failed: {str(e)}")
         
-        # Extract issues and create result
+    
         issues = result.get("all_issues", [])
         
-        # Calculate severity distribution
+    
         severity_counts = {
             IssueSeverity.CRITICAL: 0,
             IssueSeverity.HIGH: 0,
@@ -131,7 +131,7 @@ class AnalysisService:
                    "percentage": round(severity_counts[IssueSeverity.LOW] / max(total_issues, 1) * 100, 1)}
         }
         
-        # Create a mock AnalysisResult for the API response
+    
         total_files = sum(len(files) for files in result.get("discovered_files", {}).values())
         
         analysis_result = AnalysisResult(
