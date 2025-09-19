@@ -98,6 +98,7 @@ class CodeIssue(BaseModel):
     message: str
     suggestion: Optional[str] = None
     code_snippet: Optional[str] = None
+    ai_analysis: Optional[str] = None
     
     def __init__(self, **data):
         print(f"DEBUG: Creating API CodeIssue with line={data.get('line')}, file={data.get('file')}")

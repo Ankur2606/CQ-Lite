@@ -144,9 +144,15 @@ def push_to_notion(report: Dict[str, Any]) -> bool:
                 json_blocks = json.loads(code)
                 if isinstance(json_blocks, list):
                     # Successfully parsed JSON array, add blocks directly
+                    print(f" Processing {len(json_blocks)} JSON blocks for Notion")
                     for block in json_blocks:
                         # Validate basic structure of block before adding
                         if isinstance(block, dict) and "type" in block and "object" in block:
+                            # Skip table blocks entirely as they often cause validation issues
+                            if block.get("type") == "table":
+                                print(f" Skipping table block to avoid validation issues")
+                                continue
+                            
                             # Check for rich_text content exceeding 2000 chars and split if needed
                             for field_name in ["paragraph", "bulleted_list_item", "heading_1", "heading_2", "heading_3"]:
                                 if field_name in block:
@@ -159,8 +165,18 @@ def push_to_notion(report: Dict[str, Any]) -> bool:
                                                 if len(content) > 1990:  # Leave small margin
                                                     field["rich_text"][i]["text"]["content"] = content[:1990]
                             
-                            # Add the block to children_blocks
-                            children_blocks.append(block)
+                            # Additional validation: ensure block has required structure
+                            block_type = block.get("type")
+                            if block_type == "divider":
+                                # Divider blocks just need the divider key
+                                if "divider" not in block:
+                                    block["divider"] = {}
+                                children_blocks.append(block)
+                            elif block_type and block_type in block and "rich_text" in block[block_type]:
+                                # Regular text blocks
+                                children_blocks.append(block)
+                            else:
+                                print(f" Skipping invalid block structure: {block_type}")
                     
                     # No need to process further
                     print(" Processed JSON blocks for Notion")

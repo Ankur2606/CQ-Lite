@@ -83,7 +83,8 @@ def convert_backend_issues_to_api_issues(backend_issues: List[Any]) -> List[APIC
                     category=category,
                     message=issue_dict.get('title', issue_dict.get('description', "No message")),
                     suggestion=issue_dict.get('suggestion', None),
-                    code_snippet=issue_dict.get('code_snippet', None)
+                    code_snippet=issue_dict.get('code_snippet', None),
+                    ai_analysis=issue_dict.get('ai_review_context', None)
                 )
                 api_issues.append(api_issue)
                 print(f"  Created API issue: file={api_issue.file}, line={api_issue.line}")
@@ -96,7 +97,8 @@ def convert_backend_issues_to_api_issues(backend_issues: List[Any]) -> List[APIC
                     category=issue.get('category', "unknown"),
                     message=issue.get('message', "No message"),
                     suggestion=issue.get('suggestion'),
-                    code_snippet=issue.get('code_snippet')
+                    code_snippet=issue.get('code_snippet'),
+                    ai_analysis=issue.get('ai_analysis')
                 ))
                 
         except Exception as e:
